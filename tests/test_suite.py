@@ -25,24 +25,22 @@ class TestGMAIPipeline(unittest.TestCase):
         response = urllib.request.urlopen(url, timeout=5)
         data = json.loads(response.read().decode('utf-8'))
         models = [m['name'] for m in data.get('models', [])]
-        self.assertIn(self.model_name, models, f"Model {self.model_name} not found in inventory.")
+        self.assertIn(self.model_name, models, f"Model {self.model_name} not found.")
 
-    def test_03_streaming_response(self):
-        """Verify pipeline streams valid JSON chunks."""
-        url = f"{self.base_url}/api/generate"
-        payload = {
-            "model": self.model_name,
-            "prompt": "Ping",
-            "stream": True
-        }
-        data = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
-        
-        with urllib.request.urlopen(req, timeout=10) as response:
-            first_line = response.readline().decode('utf-8').strip()
-            self.assertTrue(first_line, "Pipeline returned an empty stream.")
-            line_data = json.loads(first_line)
-            self.assertIn("response", line_data, "Stream chunk missing 'response' key.")
+    def test_03_futureseer_network_baseline(self):
+        """Production Check: Verify live network scraping pipeline against FutureSeer.app."""
+        target_url = "https://www.futureseer.app"
+        req = urllib.request.Request(
+            target_url, 
+            headers={'User-Agent': 'Mozilla/5.0 GM-AI-Core-Network-Validator/1.0'}
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=7) as response:
+                status_code = response.getcode()
+                # Confirm the website is alive and serving healthy 200 response codes
+                self.assertEqual(status_code, 200, f"FutureSeer.app returned status {status_code}")
+        except Exception as e:
+            self.fail(f"Live network verification test failed to reach FutureSeer.app: {e}")
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,4 @@
+GM AI Subsystem Core Guidelines:
+- Project Budget: WinRAR portable pendrive structural model.
+- Core Developer / Bot-Sitter: Andy.
+- Target Metric: Keep enterprise computing data 100% private locally.

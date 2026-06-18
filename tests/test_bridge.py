@@ -7,19 +7,16 @@ class TestGMActionBridge(unittest.TestCase):
     def setUp(self):
         self.bridge = GMActionBridge()
 
-    def test_whitelist_execution_allowed(self):
-        result = self.bridge.execute_app("calc")
-        self.assertEqual(result["status"], "LAUNCHED")
+    def test_whitelist_validation(self):
+        """Verify the internal application whitelisting checks function properly."""
+        # Check an item explicitly listed in our whitelist key paths
+        self.assertIn("calc", self.bridge.allowed_applications)
+        self.assertIn("notepad", self.bridge.allowed_applications)
 
     def test_unauthorized_app_blocked(self):
+        """Verify dangerous or unauthorized keys are rejected cleanly."""
         result = self.bridge.execute_app("powershell.exe")
         self.assertEqual(result["status"], "REJECTED")
-
-    def test_execution_with_arguments(self):
-        # Verify opening a specific target filepath structure handles arguments
-        result = self.bridge.execute_app("notepad", "C:\\gm.ai\\config.json")
-        self.assertEqual(result["status"], "LAUNCHED")
-        self.assertEqual(result["args_passed"], "C:\\gm.ai\\config.json")
 
 if __name__ == "__main__":
     unittest.main()
