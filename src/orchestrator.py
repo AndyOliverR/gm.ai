@@ -24,7 +24,7 @@ class GMAIEngine:
         }
 
     def process_message(self, session_id: str, raw_payload: str):
-        """Orchestrate parsing, shortcut processing, local RAG checks, web scraping, and inference."""
+        """Orchestrate parsing, local short-circuits, file writing, web connections, and inference."""
         parsed = self.parser.parse_payload(raw_payload)
         if parsed["status"] != "CLEAN":
             yield f"[SYSTEM BLOCKED] {parsed.get('error', 'Malformed Input')}"
@@ -43,10 +43,31 @@ class GMAIEngine:
             yield f"\n[SYSTEM STATUS] Execution result: {action_result['status']}"
             return
 
-        # 2. Upgraded Network Check: Explicitly match 'fetch' followed by a clean URL token string boundary
+        # 2. Automated File Writing & Appending Interceptor Layer
+        # Syntax: writefile path/to/file.txt | Content text goes here
+        if normalized_prompt.startswith("writefile ") or normalized_prompt.startswith("appendfile "):
+            is_append = normalized_prompt.startswith("appendfile ")
+            cmd_len = 11 if is_append else 10
+            
+            raw_arguments = user_prompt[cmd_len:].strip()
+            if "|" in raw_arguments:
+                file_path, content = raw_arguments.split("|", 1)
+                file_path = file_path.strip()
+                content = content.lstrip("\n\r")
+                
+                mode = "a" if is_append else "w"
+                yield f"[SYSTEM] Intercepted file manipulation command. Target path: '{file_path}'...\n"
+                
+                result = self.action_bridge.write_to_file(file_path, content, mode)
+                self.db.log_action(session_id, "file_io", f"{result['status']} (File: {file_path})")
+                yield f"[SYSTEM STATUS] File execution result: {result['status']}"
+                if "error" in result:
+                    yield f" - Error Details: {result['error']}"
+                return
+
+        # 3. Check for manual live web-scraping requests
         if user_prompt.lower().startswith("fetch "):
             target_url = user_prompt[6:].strip()
-            # Basic validation check to verify it contains a protocol header hook
             if target_url.startswith(("http://", "https://")):
                 yield f"[SYSTEM] Intercepted network scraping command. Querying target URL: '{target_url}'...\n\n"
                 live_web_data = self.web_scraper.fetch_live_text(target_url)
@@ -54,7 +75,7 @@ class GMAIEngine:
                 yield "\n[SYSTEM] Network extraction complete. Live content ingested safely."
                 return
 
-        # 3. Check for local RAG document requests
+        # 4. Check for local RAG document requests
         if any(keyword in normalized_prompt for keyword in ["document", "knowledge", "file", "budget"]):
             yield "[SYSTEM] Intercepted knowledge request. Querying local storage structures...\n\n"
             local_knowledge = self.doc_reader.read_all_documents()
@@ -65,7 +86,7 @@ class GMAIEngine:
                 yield "\n[SYSTEM] Knowledge retrieval complete. Data processed 100% locally."
             return
 
-        # 4. Fallback to conversation loop context
+        # 5. Fallback to conversation loop context
         history = self.db.get_session_history(session_id, limit=6)
         context_string = ""
         for turn in history[:-1]:
