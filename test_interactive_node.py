@@ -2,14 +2,17 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 from orchestrator import GMAIEngine
+from telemetry.sensor import GMTelemetrySensor
 
 def start_sandbox():
     engine = GMAIEngine()
+    sensor = GMTelemetrySensor()
     session_id = "sandbox_developer_session"
     
     print("====================================================")
     print("GM AI Core Engine Workspace Initialized")
     print("Operator: Bot-Sitter (Human in the loop)")
+    print("Shortcut command: Type 'status' to poll telemetry.")
     print("Type 'exit' or 'quit' to terminate the session.")
     print("====================================================\n")
     
@@ -19,6 +22,10 @@ def start_sandbox():
             if user_input.strip().lower() in ['exit', 'quit']:
                 print("Closing engine session.")
                 break
+                
+            if user_input.strip().lower() == 'status':
+                print("\n" + sensor.format_telemetry_report())
+                continue
                 
             if not user_input.strip():
                 continue

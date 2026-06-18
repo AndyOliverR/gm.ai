@@ -1,0 +1,12 @@
+{
+    "model_configuration": {
+        "active_model": "gpt-oss:120b-cloud",
+        "host_address": "127.0.0.1",
+        "port_mapping": 11434
+    },
+    "runtime_boundaries": {
+        "max_input_characters": 4000,
+        "database_storage_path": "C:\\gm.ai\\storage\\gm_core.db",
+        "rolling_history_limit": 6
+    }
+}
