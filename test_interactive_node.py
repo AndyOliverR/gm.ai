@@ -1,47 +1,105 @@
 import sys
 import os
 import json
+import tkinter as tk
+from tkinter import scrolledtext
+import threading
+
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 from orchestrator import GMAIEngine
 from telemetry.sensor import GMTelemetrySensor
 
-def start_sandbox():
-    engine = GMAIEngine()
-    sensor = GMTelemetrySensor()
-    session_id = "sandbox_developer_session"
-    
-    print("====================================================")
-    print("GM AI Core Engine Workspace Initialized")
-    print("Operator: Bot-Sitter (Human in the loop)")
-    print("Shortcut command: Type 'status' to poll telemetry.")
-    print("Type 'exit' or 'quit' to terminate the session.")
-    print("====================================================\n")
-    
-    while True:
-        try:
-            user_input = input("\nBot-Sitter: ")
-            if user_input.strip().lower() in ['exit', 'quit']:
-                print("Closing engine session.")
-                break
-                
-            if user_input.strip().lower() == 'status':
-                print("\n" + sensor.format_telemetry_report())
-                continue
-                
-            if not user_input.strip():
-                continue
-                
-            # Use json.dumps to automatically handle all escape characters and paths safely
-            raw_payload = json.dumps({"prompt": user_input})
+class GMAIGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("GM AI Subsystem Core Engine Workspace")
+        self.root.geometry("800x600")
+        self.root.configure(bg="#1e1e24")
+        
+        self.engine = GMAIEngine()
+        self.sensor = GMTelemetrySensor()
+        self.session_id = "sandbox_developer_session"
+        
+        self.create_widgets()
+        
+    def create_widgets(self):
+        # Title Header
+        title_label = tk.Label(
+            self.root, 
+            text="GM AI Core Engine Workspace (Operator: Bot-Sitter)", 
+            font=("Arial", 14, "bold"), fg="#ffffff", bg="#1e1e24", pady=10
+        )
+        title_label.pack(fill=tk.X)
+        
+        # Chat History Log Display Screen
+        self.chat_display = scrolledtext.ScrolledText(
+            self.root, wrap=tk.WORD, state=tk.DISABLED, 
+            font=("Consolas", 11), bg="#2d2d34", fg="#ffffff", insertbackground="white"
+        )
+        self.chat_display.pack(padx=15, pady=10, fill=tk.BOTH, expand=True)
+        
+        # Display initialization layout status welcome instructions
+        self.append_text("SYSTEM", "Visual UI Console active. Type 'status' to poll telemetry or 'exit' to quit.\n" + "-"*60 + "\n")
+        
+        # Input Entry Field Frame Row
+        input_frame = tk.Frame(self.root, bg="#1e1e24")
+        input_frame.pack(fill=tk.X, padx=15, pady=15, side=tk.BOTTOM)
+        
+        self.entry_field = tk.Entry(
+            input_frame, font=("Arial", 12), bg="#3e3e42", fg="#ffffff", insertbackground="white"
+        )
+        self.entry_field.pack(fill=tk.X, side=tk.LEFT, expand=True, ipady=4)
+        self.entry_field.bind("<Return>", lambda event: self.send_message())
+        
+        send_btn = tk.Button(
+            input_frame, text="Execute", font=("Arial", 11, "bold"), 
+            bg="#007acc", fg="#ffffff", activebackground="#005999", activeforeground="white",
+            command=self.send_message, width=12
+        )
+        send_btn.pack(side=tk.RIGHT, padx=(10, 0))
+        
+    def append_text(self, sender, text):
+        self.chat_display.configure(state=tk.NORMAL)
+        self.chat_display.insert(tk.END, f"{sender}: {text}\n")
+        self.chat_display.see(tk.END)
+        self.chat_display.configure(state=tk.DISABLED)
+        
+    def send_message(self):
+        user_input = self.entry_field.get().strip()
+        if not user_input:
+            return
             
-            print("GM AI Engine: ", end="", flush=True)
-            for token in engine.process_message(session_id, raw_payload):
-                print(token, end="", flush=True)
-            print()
+        self.entry_field.delete(0, tk.END)
+        self.append_text("Bot-Sitter", user_input)
+        
+        if user_input.lower() in ['exit', 'quit']:
+            self.append_text("SYSTEM", "Closing engine workspace window session...")
+            self.root.after(1000, self.root.destroy)
+            return
             
-        except KeyboardInterrupt:
-            print("\nSession aborted.")
-            break
+        if user_input.lower() == 'status':
+            report = self.sensor.format_telemetry_report()
+            self.append_text("GM AI Engine", f"\n{report}\n")
+            return
+            
+        # Run inference stream loop inside a separate background thread to keep UI fluid and responsive
+        threading.Thread(target=self.stream_engine_response, args=(user_input,), daemon=True).start()
+        
+    def stream_engine_response(self, prompt):
+        self.append_text("GM AI Engine", "")
+        raw_payload = json.dumps({"prompt": prompt})
+        
+        for token in self.engine.process_message(self.session_id, raw_payload):
+            self.chat_display.configure(state=tk.NORMAL)
+            self.chat_display.insert(tk.END, token)
+            self.chat_display.see(tk.END)
+            self.chat_display.configure(state=tk.DISABLED)
+        
+        self.chat_display.configure(state=tk.NORMAL)
+        self.chat_display.insert(tk.END, "\n")
+        self.chat_display.configure(state=tk.DISABLED)
 
 if __name__ == "__main__":
-    start_sandbox()
+    root = tk.Tk()
+    app = GMAIGUI(root)
+    root.mainloop()
