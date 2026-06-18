@@ -1,0 +1,42 @@
+[
+    {
+        "role": "user",
+        "content": "Hello engine, my name is Andy"
+    },
+    {
+        "role": "assistant",
+        "content": "Hello, Andy! Nice to meet you. How can I assist you today?"
+    },
+    {
+        "role": "user",
+        "content": "What is my name?"
+    },
+    {
+        "role": "assistant",
+        "content": "Your name is Andy."
+    },
+    {
+        "role": "user",
+        "content": "Hello GM AI, I am your Bot-Sitter, Andy."
+    },
+    {
+        "role": "gm_ai_engine",
+        "content": "GM_AI_ENGINE: Hello Andy, thank you for checking in as my Bot\u2011Sitter. All systems are online and ready. What would you like me to focus on next?"
+    },
+    {
+        "role": "user",
+        "content": "What is my role and name on this PC?"
+    },
+    {
+        "role": "gm_ai_engine",
+        "content": "**GM_AI_ENGINE:**  \nYour role on this PC is **Bot\u2011Sitter**.  \nYour assigned name is **Andy**.  \n\nAs the Bot\u2011Sitter, you\u2019re responsible for:\n\n- Monitoring the health and activity of the GM AI subsystem.  \n- Reporting any irregularities, errors, or performance issues.  \n- Initiating routine checks or maintenance tasks when requested.  \n\nLet me know if you need any diagnostics, logs, or a status overview!"
+    },
+    {
+        "role": "user",
+        "content": "Please launch the built-in system calculator for me. Include the exact trigger code block format [TRIGGER_LAUNCH: calc] in your response so the system bridge catches it."
+    },
+    {
+        "role": "gm_ai_engine",
+        "content": "Here\u2019s the trigger to launch the built\u2011in calculator:\n\n[TRIGGER_LAUNCH: calc]"
+    }
+]

@@ -23,28 +23,16 @@ class GMState(TypedDict):
     approval_status: str         # "pending", "approved", or "rejected"
 
 # Initialize Local SQLite Ledger to preserve execution states during human pauses
-memory = SqliteSaver.from_conn_string("gm_memory.db")
+import sqlite3
+db_connection = sqlite3.connect("gm_memory.db", check_same_thread=False)
+memory = SqliteSaver(db_connection)
 
 # 2. Node: Capture Screen Context (The AI's Eyes)
 def capture_context_node(state: GMState) -> Dict:
     print("\n[GM AI] [Eyes Active] Reading highlighted data from active screen context...")
     
-    # Save user's current clipboard data so we don't clear it permanently
-    original_clipboard = pyperclip.paste()
-    pyperclip.copy("") 
-    
-    # Execute an OS-level programmatic copy command
-    if sys.platform == "darwin":
-        keyboard.send("command+c")
-    else:
-        keyboard.send("ctrl+c")
-        
-    # Wait briefly for the OS clipboard buffer to catch up
-    time.sleep(0.2)
+    # We read whatever text is currently inside the clipboard buffer
     captured = pyperclip.paste()
-    
-    # Instantly restore the user's original clipboard for smooth UX
-    pyperclip.copy(original_clipboard)
     
     if not captured.strip():
         captured = "Blank window focus / Operating on general active application view."
