@@ -24,7 +24,7 @@ class GMAIEngine:
         }
 
     def process_message(self, session_id: str, raw_payload: str):
-        """Orchestrate parsing, local short-circuits, file writing, web connections, and inference."""
+        """Orchestrate parsing, shortcuts, macro processing, RAG, scraping, and fallback inference."""
         parsed = self.parser.parse_payload(raw_payload)
         if parsed["status"] != "CLEAN":
             yield f"[SYSTEM BLOCKED] {parsed.get('error', 'Malformed Input')}"
@@ -43,29 +43,38 @@ class GMAIEngine:
             yield f"\n[SYSTEM STATUS] Execution result: {action_result['status']}"
             return
 
-        # 2. Automated File Writing & Appending Interceptor Layer
-        # Syntax: writefile path/to/file.txt | Content text goes here
+        # 2. OS Macro Interceptor Layer
+        if normalized_prompt.startswith("listfiles"):
+            target_subfolder = user_prompt[9:].strip()
+            yield f"[SYSTEM] Accessing localized macro layer. Scanning tree index...\n\n"
+            result_tree = self.action_bridge.list_directory_contents(target_subfolder)
+            yield result_tree
+            return
+            
+        if normalized_prompt.startswith("killtask "):
+            target_task = user_prompt[9:].strip()
+            yield f"[SYSTEM] Accessing localized macro layer. Terminating task process: '{target_task}'...\n"
+            kill_result = self.action_bridge.kill_whitelisted_process(target_task)
+            self.db.log_action(session_id, "task_macro", f"{kill_result['status']} (Target: {target_task})")
+            yield f"[SYSTEM STATUS] Execution result: {kill_result['status']}"
+            return
+
+        # 3. Automated File Writing & Appending Interceptor Layer
         if normalized_prompt.startswith("writefile ") or normalized_prompt.startswith("appendfile "):
             is_append = normalized_prompt.startswith("appendfile ")
             cmd_len = 11 if is_append else 10
-            
             raw_arguments = user_prompt[cmd_len:].strip()
             if "|" in raw_arguments:
                 file_path, content = raw_arguments.split("|", 1)
                 file_path = file_path.strip()
                 content = content.lstrip("\n\r")
-                
-                mode = "a" if is_append else "w"
-                yield f"[SYSTEM] Intercepted file manipulation command. Target path: '{file_path}'...\n"
-                
-                result = self.action_bridge.write_to_file(file_path, content, mode)
+                result = self.action_bridge.write_to_file(file_path, content, "a" if is_append else "w")
                 self.db.log_action(session_id, "file_io", f"{result['status']} (File: {file_path})")
+                yield f"[SYSTEM] Intercepted file manipulation command. Target path: '{file_path}'...\n"
                 yield f"[SYSTEM STATUS] File execution result: {result['status']}"
-                if "error" in result:
-                    yield f" - Error Details: {result['error']}"
                 return
 
-        # 3. Check for manual live web-scraping requests
+        # 4. Check for manual live web-scraping requests
         if user_prompt.lower().startswith("fetch "):
             target_url = user_prompt[6:].strip()
             if target_url.startswith(("http://", "https://")):
@@ -75,7 +84,7 @@ class GMAIEngine:
                 yield "\n[SYSTEM] Network extraction complete. Live content ingested safely."
                 return
 
-        # 4. Check for local RAG document requests
+        # 5. Check for local RAG document requests
         if any(keyword in normalized_prompt for keyword in ["document", "knowledge", "file", "budget"]):
             yield "[SYSTEM] Intercepted knowledge request. Querying local storage structures...\n\n"
             local_knowledge = self.doc_reader.read_all_documents()
@@ -86,19 +95,14 @@ class GMAIEngine:
                 yield "\n[SYSTEM] Knowledge retrieval complete. Data processed 100% locally."
             return
 
-        # 5. Fallback to conversation loop context
+        # 6. Fallback to conversation loop context
         history = self.db.get_session_history(session_id, limit=6)
         context_string = ""
         for turn in history[:-1]:
             context_string += f"{turn['role'].upper()}: {turn['content']}\n"
         context_string += f"BOT_SITTER: {user_prompt}\nGM_AI_ENGINE:"
 
-        payload = {
-            "model": self.model_name,
-            "prompt": context_string.strip(),
-            "stream": True
-        }
-        
+        payload = {"model": self.model_name, "prompt": context_string.strip(), "stream": True}
         data = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(self.url, data=data, headers={'Content-Type': 'application/json'})
         
@@ -115,6 +119,5 @@ class GMAIEngine:
                         except json.JSONDecodeError:
                             pass
                 self.db.log_message(session_id, "gm_ai_engine", assistant_response)
-                
         except Exception as e:
             yield f"\n[PIPELINE EXCEPTION] Failed to connect to server: {e}"
