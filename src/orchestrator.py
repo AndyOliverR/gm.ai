@@ -24,7 +24,7 @@ class GMAIEngine:
         }
 
     def process_message(self, session_id: str, raw_payload: str):
-        """Orchestrate parsing, shortcuts, macro processing, RAG, scraping, and fallback inference."""
+        """Orchestrate parsing, shortcuts, compilation execution, macros, RAG, scraping, and fallback."""
         parsed = self.parser.parse_payload(raw_payload)
         if parsed["status"] != "CLEAN":
             yield f"[SYSTEM BLOCKED] {parsed.get('error', 'Malformed Input')}"
@@ -43,7 +43,24 @@ class GMAIEngine:
             yield f"\n[SYSTEM STATUS] Execution result: {action_result['status']}"
             return
 
-        # 2. OS Macro Interceptor Layer
+        # 2. Advanced Multi-File Compiler & Execution Layer
+        # Syntax: compilesuite folder_dir | primary_script.py
+        if normalized_prompt.startswith("compilesuite "):
+            raw_arguments = user_prompt[13:].strip()
+            if "|" in raw_arguments:
+                suite_folder, execution_script = raw_arguments.split("|", 1)
+                suite_folder = suite_folder.strip()
+                execution_script = execution_script.strip()
+                
+                yield f"[SYSTEM] Accessing compiler pipeline. Initializing runtime suite: '{suite_folder}'...\n"
+                result = self.action_bridge.compile_and_run_suite(suite_folder, execution_script)
+                self.db.log_action(session_id, "compiler_io", f"{result['status']} (Folder: {suite_folder})")
+                yield f"[SYSTEM STATUS] Execution result: {result['status']}"
+                if "error" in result:
+                    yield f" - Details: {result['error']}"
+                return
+
+        # 3. OS Macro Interceptor Layer
         if normalized_prompt.startswith("listfiles"):
             target_subfolder = user_prompt[9:].strip()
             yield f"[SYSTEM] Accessing localized macro layer. Scanning tree index...\n\n"
@@ -59,7 +76,7 @@ class GMAIEngine:
             yield f"[SYSTEM STATUS] Execution result: {kill_result['status']}"
             return
 
-        # 3. Automated File Writing & Appending Interceptor Layer
+        # 4. Automated File Writing & Appending Interceptor Layer
         if normalized_prompt.startswith("writefile ") or normalized_prompt.startswith("appendfile "):
             is_append = normalized_prompt.startswith("appendfile ")
             cmd_len = 11 if is_append else 10
@@ -74,7 +91,7 @@ class GMAIEngine:
                 yield f"[SYSTEM STATUS] File execution result: {result['status']}"
                 return
 
-        # 4. Check for manual live web-scraping requests
+        # 5. Check for manual live web-scraping requests
         if user_prompt.lower().startswith("fetch "):
             target_url = user_prompt[6:].strip()
             if target_url.startswith(("http://", "https://")):
@@ -84,7 +101,7 @@ class GMAIEngine:
                 yield "\n[SYSTEM] Network extraction complete. Live content ingested safely."
                 return
 
-        # 5. Check for local RAG document requests
+        # 6. Check for local RAG document requests
         if any(keyword in normalized_prompt for keyword in ["document", "knowledge", "file", "budget"]):
             yield "[SYSTEM] Intercepted knowledge request. Querying local storage structures...\n\n"
             local_knowledge = self.doc_reader.read_all_documents()
@@ -95,7 +112,7 @@ class GMAIEngine:
                 yield "\n[SYSTEM] Knowledge retrieval complete. Data processed 100% locally."
             return
 
-        # 6. Fallback to conversation loop context
+        # 7. Fallback to conversation loop context
         history = self.db.get_session_history(session_id, limit=6)
         context_string = ""
         for turn in history[:-1]:
@@ -108,16 +125,12 @@ class GMAIEngine:
         
         try:
             with urllib.request.urlopen(req) as response:
-                assistant_response = ""
                 for line in response:
                     if line:
                         try:
                             line_data = json.loads(line.decode('utf-8').strip())
-                            token = line_data.get("response", "")
-                            assistant_response += token
-                            yield token
+                            yield line_data.get("response", "")
                         except json.JSONDecodeError:
                             pass
-                self.db.log_message(session_id, "gm_ai_engine", assistant_response)
         except Exception as e:
             yield f"\n[PIPELINE EXCEPTION] Failed to connect to server: {e}"
