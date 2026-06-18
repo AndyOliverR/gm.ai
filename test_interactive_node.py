@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 from orchestrator import GMAIEngine
 from telemetry.sensor import GMTelemetrySensor
@@ -30,7 +31,8 @@ def start_sandbox():
             if not user_input.strip():
                 continue
                 
-            raw_payload = f'{{"prompt": "{user_input}"}}'
+            # Use json.dumps to automatically handle all escape characters and paths safely
+            raw_payload = json.dumps({"prompt": user_input})
             
             print("GM AI Engine: ", end="", flush=True)
             for token in engine.process_message(session_id, raw_payload):

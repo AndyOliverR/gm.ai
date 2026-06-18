@@ -12,22 +12,36 @@ class GMAIEngine:
         self.parser = GMInputParser(max_chars=4000)
         self.db = GMDatabaseManager()
         self.action_bridge = GMActionBridge()
+        
+        # Local shortcut dictionary to bypass cloud provider alignment blocks
+        self.local_shortcuts = {
+            "open config": ("notepad", "C:\\gm.ai\\config.json"),
+            "open database": ("explorer", "C:\\gm.ai\\storage"),
+            "open engine logs": ("notepad", "C:\\gm.ai\\storage\\gm_core.db")
+        }
 
     def process_message(self, session_id: str, raw_payload: str):
-        """Orchestrate parsing, database storage, context retrieval, and actions."""
+        """Orchestrate parsing, shortcut processing, history tracking, and fallback cloud inference."""
         parsed = self.parser.parse_payload(raw_payload)
         if parsed["status"] != "CLEAN":
             yield f"[SYSTEM BLOCKED] {parsed.get('error', 'Malformed Input')}"
             return
 
         user_prompt = parsed["prompt"]
-        
-        # Step 1: Log incoming message turn directly into the SQL database
         self.db.log_message(session_id, "bot_sitter", user_prompt)
         
-        # Step 2: Fetch last historical log context entries from the database
+        # Check if the user prompt matches a local system shortcut key phrase
+        normalized_prompt = user_prompt.strip().lower()
+        if normalized_prompt in self.local_shortcuts:
+            app, arg = self.local_shortcuts[normalized_prompt]
+            yield f"Acknowledged. Local system shortcut triggered. Launching {app} with argument '{arg}'..."
+            action_result = self.action_bridge.execute_app(app, arg)
+            self.db.log_action(session_id, app, f"Shortcut Launch: {action_result['status']} ({arg})")
+            yield f"\n[SYSTEM STATUS] Execution result: {action_result['status']}"
+            return
+
+        # Fallback to local Ollama inference cloud node if no shortcut is matched
         history = self.db.get_session_history(session_id, limit=6)
-        
         context_string = ""
         for turn in history[:-1]:
             context_string += f"{turn['role'].upper()}: {turn['content']}\n"
@@ -55,18 +69,18 @@ class GMAIEngine:
                         except json.JSONDecodeError:
                             pass
                 
-                # Step 3: Log engine text response back to the SQL database
                 self.db.log_message(session_id, "gm_ai_engine", assistant_response)
                 
-                # Step 4: Scan and execute automation action triggers
-                action_match = re.search(r"\[TRIGGER_LAUNCH:\s*(\w+)\]", assistant_response)
+                # Check for model-generated trigger structures
+                action_match = re.search(r"\[TRIGGER_LAUNCH:\s*([^\]|]+)(?:\|([^\]]+))?\]", assistant_response)
                 if action_match:
-                    target_app = action_match.group(1)
-                    yield f"\n\n[SYSTEM] Intercepted automation token. Launching {target_app}..."
-                    action_result = self.action_bridge.execute_app(target_app)
+                    target_app = action_match.group(1).strip()
+                    raw_args = action_match.group(2)
+                    argument = raw_args.strip() if raw_args else ""
                     
-                    # Step 5: Log automation launch execution status to the database logs
-                    self.db.log_action(session_id, target_app, action_result['status'])
+                    yield f"\n\n[SYSTEM] Intercepted automation token. Launching {target_app}..."
+                    action_result = self.action_bridge.execute_app(target_app, argument)
+                    self.db.log_action(session_id, target_app, f"{action_result['status']} ({argument})")
                     yield f"\n[SYSTEM STATUS] Execution result: {action_result['status']}"
                 
         except Exception as e:
