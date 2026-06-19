@@ -12,7 +12,6 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-# Import Phase 5 through Phase 10 unified modular components
 from src.ingestion.screen_capture import ScreenContextLayer
 from src.ingestion.ocr_reader import GMAScreenOCRReader
 from src.execution.action_bridge import SystemOperatorBridge
@@ -25,7 +24,6 @@ from src.execution.data_extractor import GMAIDataExtractor
 pyautogui.FAILSAFE = True  
 pyautogui.PAUSE = 0.05     
 
-# Define the Structured State of the Human Mind Extension
 class GMState(TypedDict):
     raw_user_input: str          
     captured_context: str        
@@ -65,31 +63,15 @@ def capture_context_node(state: GMState) -> Dict:
 
 def parse_intent_node(state: GMState) -> Dict:
     print("[GM AI] [Brain Active] Normalizing instruction pipelines via Ollama...")
-    
-    active_profiles_context = ""
-    roles_dir = "storage/job_roles/"
-    if os.path.exists(roles_dir):
-        for file in os.listdir(roles_dir):
-            if file.endswith("_profile.json"):
-                try:
-                    with open(os.path.join(roles_dir, file), "r") as f:
-                        prof = json.load(f)
-                        active_profiles_context += f"Trained Context: {prof['role_title']} | Details: {prof['raw_capabilities_context'][:200]}\n"
-                except Exception:
-                    pass
-
     ollama_url = "http://localhost:11434/api/generate"
+    
     system_prompt = (
         "You are GM AI, a seamless extension of the human mind. Convert the user's raw, "
-        "fragmented instruction into a highly structured JSON automation plan containing an array of 'steps'.\n"
-        f"Leverage these engrained cognitive meta parameters to guide your plan routing:\n{active_profiles_context}"
+        "fragmented instruction into a highly structured JSON automation plan containing an array of 'steps'. "
+        "Each step must be an object with 'type' ('click_element', 'type_text', 'press_key', 'press_hotkey', or 'speak_log') and 'payload'."
     )
     
-    prompt_payload = (
-        f"Sensed Screen OCR Layout: {state['captured_context']}\n"
-        f"Scraped Struct Entities: {json.dumps(state['extracted_entities'])}\n"
-        f"User Intent Input: {state['raw_user_input']}"
-    )
+    prompt_payload = f"Sensed Screen OCR Layout: {state['captured_context']}\nUser Intent Input: {state['raw_user_input']}"
     
     try:
         payload = {"model": "llama3", "prompt": f"{system_prompt}\n\n{prompt_payload}", "stream": False, "format": "json"}
@@ -98,8 +80,17 @@ def parse_intent_node(state: GMState) -> Dict:
     except Exception:
         user_lower = state['raw_user_input'].lower()
         
-        # New Structural Routing Branch Logic for Multi-Field Web Automation Processing Requests
-        if "search" in user_lower or "web field" in user_lower or "manipulate" in user_lower:
+        # New Structural Routing Branch Logic for Global Web Search Actions
+        if "google" in user_lower or "lookup" in user_lower or "web search" in user_lower:
+            steps = [
+                {"type": "click_element", "payload": "chrome.url_bar"},
+                {"type": "type_text", "payload": "google.com"},
+                {"type": "press_key", "payload": "enter"},
+                {"type": "click_element", "payload": "google_web.search_box"},
+                {"type": "type_text", "payload": "World's First Ubiquitous GM AI Engine"},
+                {"type": "press_key", "payload": "enter"}
+            ]
+        elif "search" in user_lower or "web field" in user_lower:
             steps = [
                 {"type": "click_element", "payload": "chrome.search_input"},
                 {"type": "type_text", "payload": "GM AI Omnipresent Core Engine Active"},
@@ -107,11 +98,6 @@ def parse_intent_node(state: GMState) -> Dict:
             ]
         elif "save" in user_lower or "extract" in user_lower:
             steps = [{"type": "extract_intel", "payload": "commit_active_variables"}]
-        elif "profile" in user_lower or "scan window" in user_lower or "map" in user_lower:
-            steps = [
-                {"type": "click_element", "payload": "custom_target_app.center_focus"},
-                {"type": "type_text", "payload": "echo Adaptive Profiler Configured!"}
-            ]
         else:
             steps = [
                 {"type": "click_element", "payload": "notepad.edit_field"},
@@ -150,6 +136,8 @@ def execute_macros_node(state: GMState) -> Dict:
                     operator_bridge.layouts = operator_bridge._load_layouts()
                 bootstrapper.ensure_application_running(app_key)
                 operator_bridge.execute_targeted_click(app_key, element_key)
+            else:
+                print(f"[GM AI Error] Invalid click target format: {payload}")
         elif action_type == "type_text":
             operator_bridge.execute_text_input(payload, press_enter=False)
         elif action_type == "press_key":
@@ -177,7 +165,7 @@ gm_engine = workflow.compile(checkpointer=memory)
 if __name__ == "__main__":
     thread_config = {"configurable": {"thread_id": "global_session"}}
     print("======================================================")
-    print("GM AI v1.7 — Omnipresent Multi-Field Web Engine Active")
+    print("GM AI v1.7 — Global Web Searching Engine Core Active")
     print("======================================================")
     
     user_input = input("Describe what you want to do in simple/broken English: ")
