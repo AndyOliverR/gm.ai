@@ -1,0 +1,25 @@
+{
+  "steps": [
+    {
+      "type": "click",
+      "x": 1357,
+      "y": 1033,
+      "button": "Button.left",
+      "delay": 10.95
+    },
+    {
+      "type": "click",
+      "x": 1292,
+      "y": 1040,
+      "button": "Button.left",
+      "delay": 23.24
+    },
+    {
+      "type": "click",
+      "x": 1287,
+      "y": 910,
+      "button": "Button.left",
+      "delay": 23.9
+    }
+  ]
+}
