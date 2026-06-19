@@ -12,7 +12,6 @@ except ImportError:
     raise ImportError("Dependency missing. Please run: pip install websockets")
 
 from app import gm_engine
-# FIX: Map directly to the correct class module built during Phase 13
 from src.execution.audit_ledger import GMAIAuditLedger
 
 class GMANetworkBroker:
@@ -20,10 +19,10 @@ class GMANetworkBroker:
         self.host = host
         self.port = port
         self.ledger = GMAIAuditLedger()
-        print(f"[GM AI Broker] Initialized Audited Network Broker on {self.host}:{self.port}")
+        print(f"[GM AI Broker] Initialized Isolated Channel Network Broker on {self.host}:{self.port}")
 
     async def handle_stream(self, websocket):
-        """Intercepts remote wireless telemetry, passes it to LangGraph, and records results."""
+        """Intercepts telemetry, extracts channel partition IDs, and runs isolated workflows."""
         remote_address = websocket.remote_address
         print(f"\n[GM AI Broker] Active network connection hook: {remote_address}")
 
@@ -33,12 +32,16 @@ class GMANetworkBroker:
                     payload = json.loads(message)
                     device_source = payload.get("device", "Remote Display")
                     remote_intent = payload.get("command", "").strip()
+                    
+                    # Phase 15: Extract explicit tenant channel metadata with a safe fallback
+                    channel_id = payload.get("channel", f"channel_{device_source.replace(' ', '_').lower()}")
 
-                    print(f"\n[GM AI Network Task] Received via {device_source}: '{remote_intent}'")
+                    print(f"\n[GM AI Network Task] Received via Channel '{channel_id}' [{device_source}]: '{remote_intent}'")
 
                     if remote_intent:
                         print(f"[GM AI Broker] Initializing state graph pipeline loop...")
-                        thread_config = {"configurable": {"thread_id": f"network_{device_source.replace(' ', '_')}"}}
+                        # Thread-level separation ensures LangGraph keeps different user states separated
+                        thread_config = {"configurable": {"thread_id": f"session_{channel_id}"}}
                         initial_state = {"raw_user_input": remote_intent, "approval_status": "pending"}
 
                         for event in gm_engine.stream(initial_state, thread_config):
@@ -46,7 +49,7 @@ class GMANetworkBroker:
 
                         current_state = gm_engine.get_state(thread_config).values
 
-                        print("\n=========== 🛡️ WIRELESS REMOTE BOT-SITTER CONFIRMATION ===========")
+                        print(f"\n=========== 🛡️ WIRELESS CONFIRMATION: CHANNEL [{channel_id.upper()}] ===========")
                         print(f"Origin Device: {device_source}")
                         print(f"Captured Text Context: '{current_state.get('captured_context', '')}'")
                         print("\nGenerated Remote Automation Steps Blueprint:")
@@ -55,8 +58,11 @@ class GMANetworkBroker:
                         print("====================================================================")
 
                         response = {
-                            "status": "AWAITING_HUMAN_CONFIRMATION",
-                            "msg": "Automation blueprint generated. Awaiting physical operator confirmation on host machine."
+                            "id": "NEW",
+                            "device": device_source,
+                            "channel": channel_id,
+                            "command": remote_intent,
+                            "status": "AWAITING_HUMAN_CONFIRMATION"
                         }
                         await websocket.send(json.dumps(response))
 
@@ -66,12 +72,12 @@ class GMANetworkBroker:
                             for event in gm_engine.stream(None, thread_config):
                                 pass
 
-                            # FIX: Call verified database method map
-                            self.ledger.commit_transaction(intent=remote_intent, status="success_completed", device=device_source)
-                            print("[GM AI Broker] Remote task executed successfully.")
+                            # Enforce Multi-Tenant Data Separation at the database layer
+                            self.ledger.commit_transaction(intent=remote_intent, status="success_completed", device=device_source, channel=channel_id)
+                            print(f"[GM AI Broker] Task successfully executed on channel: {channel_id}")
                         else:
-                            self.ledger.commit_transaction(intent=remote_intent, status="rejected_by_user", device=device_source)
-                            print("[GM AI Broker] Remote deployment blocked by host user.")
+                            self.ledger.commit_transaction(intent=remote_intent, status="rejected_by_user", device=device_source, channel=channel_id)
+                            print(f"[GM AI Broker] Task rejected on channel: {channel_id}")
 
                 except json.JSONDecodeError:
                     await websocket.send(json.dumps({"status": "ERROR", "msg": "Invalid JSON structural format"}))
@@ -81,7 +87,7 @@ class GMANetworkBroker:
 
     async def main_loop(self):
         async with websockets.serve(self.handle_stream, self.host, self.port):
-            print("[GM AI Broker] Audited Cross-Device Gateway Online. Ready...")
+            print("[GM AI Broker] Multi-Tenant Gateway Online. Ready...")
             await asyncio.Future()
 
     def start_server(self):
