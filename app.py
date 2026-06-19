@@ -18,6 +18,7 @@ from src.execution.action_bridge import SystemOperatorBridge
 from src.communication.voice_ledger import GMAIVoiceAuditor
 from src.execution.app_bootstrapper import GMAIAppBootstrapper
 from src.execution.macro_player import GMAIMacroPlayer
+from src.ingestion.layout_profiler import GMAILayoutProfiler
 
 pyautogui.FAILSAFE = True  
 pyautogui.PAUSE = 0.05     
@@ -40,12 +41,16 @@ operator_bridge = SystemOperatorBridge()
 voice_auditor = GMAIVoiceAuditor()
 bootstrapper = GMAIAppBootstrapper()
 macro_player = GMAIMacroPlayer()
+profiler = GMAILayoutProfiler()
 
 def capture_context_node(state: GMState) -> Dict:
     print("\n[GM AI] [Eyes Active] Snapshotting screen and running OCR pattern trace matching...")
     cached_frame_path = screen_layer.capture_full_display()
     extracted_text = ocr_engine.extract_text_from_matrix(cached_frame_path)
     
+    if not __file__: # Safety layout constraint fallback guard
+        extracted_text = "SYSTEM_FALLBACK: Active window context layer trace."
+        
     if not extracted_text.strip() or "SYSTEM_FALLBACK" in extracted_text:
         clipboard_text = pyperclip.paste().strip()
         extracted_text = f"[OCR Fallback/Clipboard] {clipboard_text if clipboard_text else 'General UI Canvas Focus'}"
@@ -73,25 +78,28 @@ def parse_intent_node(state: GMState) -> Dict:
         f"User Intent Input: {state['raw_user_input']}"
     )
     
-    payload = {
-        "model": "llama3",
-        "prompt": f"{system_prompt}\n\n{prompt_payload}",
-        "stream": False,
-        "format": "json"
-    }
-    
     try:
+        payload = {
+            "model": "llama3",
+            "prompt": f"{system_prompt}\n\n{prompt_payload}",
+            "stream": False,
+            "format": "json"
+        }
         response = requests.post(ollama_url, json=payload).json()
         structured_steps = json.loads(response['response'])
     except Exception:
         user_lower = state['raw_user_input'].lower()
         
-        # Check if the user is passing an explicit destination link or asking to open a URL bar
-        target_url = "google.com" # Default routing address
-        for entity_url in state['extracted_entities'].get("urls", []):
-            target_url = entity_url
-            
-        if "go to" in user_lower or "visit" in user_lower or "http" in user_lower or ".com" in user_lower:
+        # Phase 10 Smart Context Fallback Registry Routing Controls
+        if "profile" in user_lower or "scan window" in user_lower or "map" in user_lower:
+            steps = [
+                {"type": "click_element", "payload": "custom_target_app.center_focus"},
+                {"type": "type_text", "payload": "echo Adaptive Profiler Configured!"}
+            ]
+        elif "go to" in user_lower or "visit" in user_lower or "http" in user_lower or ".com" in user_lower:
+            target_url = "google.com"
+            for entity_url in state['extracted_entities'].get("urls", []):
+                target_url = entity_url
             steps = [
                 {"type": "click_element", "payload": "chrome.url_bar"},
                 {"type": "type_text", "payload": target_url},
@@ -104,14 +112,10 @@ def parse_intent_node(state: GMState) -> Dict:
                 {"type": "click_element", "payload": "chrome.browser_window"},
                 {"type": "type_text", "payload": "GM AI Omnipresent Engine Online!"}
             ]
-        elif "read" in user_lower or "log" in user_lower or "timeline" in user_lower or "speak" in user_lower:
-            steps = [{"type": "speak_log", "payload": "trigger_timeline_audio"}]
-        elif "task manager" in user_lower or "hotkey" in user_lower:
-            steps = [{"type": "press_hotkey", "payload": "ctrl+shift+esc"}]
         else:
             steps = [
                 {"type": "click_element", "payload": "notepad.edit_field"},
-                {"type": "type_text", "payload": "echo Base Operational Flow Active!"}
+                {"type": "type_text", "payload": "echo Base Pipeline Operational Sequence Complete!"}
             ]
         structured_steps = {"steps": steps}
 
@@ -135,12 +139,19 @@ def execute_macros_node(state: GMState) -> Dict:
         payload = step["payload"]
         
         if action_type == "run_saved_macro":
-            print(f"[GM AI Engine] Deploying high-fidelity saved hardware macro sequence...")
             macro_player.execute_replay()
             
         elif action_type == "click_element":
             if "." in payload:
                 app_key, element_key = payload.split(".", 1)
+                
+                # Phase 10 Adaptive Profiler Trigger: If the app name is not in our registry maps, dynamically scan it now
+                if app_key not in operator_bridge.layouts:
+                    print(f"[GM AI Core] Application context '{app_key}' missing from configs. Initializing live element mapper...")
+                    profiler.profile_active_window(app_key)
+                    # Reload configuration matrix maps
+                    operator_bridge.layouts = operator_bridge._load_layouts()
+                
                 bootstrapper.ensure_application_running(app_key)
                 operator_bridge.execute_targeted_click(app_key, element_key)
             else:
@@ -156,7 +167,6 @@ def execute_macros_node(state: GMState) -> Dict:
             operator_bridge.execute_system_hotkey(payload)
             
         elif action_type == "speak_log":
-            print("[GM AI Engine] Activating verbal audit narrative sequence...")
             voice_auditor.speak_timeline_summary()
             
     print("[GM AI] Operational sequence completed successfully.")
@@ -181,7 +191,7 @@ gm_engine = workflow.compile(checkpointer=memory)
 if __name__ == "__main__":
     thread_config = {"configurable": {"thread_id": "global_session"}}
     print("======================================================")
-    print("GM AI v1.7 — Autonomous Web Browser Navigator Active")
+    print("GM AI v1.7 — Self-Profiling Vision Engine Active")
     print("======================================================")
     
     user_input = input("Describe what you want to do in simple/broken English: ")

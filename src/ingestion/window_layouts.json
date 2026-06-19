@@ -42,5 +42,19 @@
       "rel_x": 0.5,
       "rel_y": 0.5
     }
+  },
+  "custom_target_app": {
+    "center_focus": {
+      "rel_x": 0.5,
+      "rel_y": 0.5
+    },
+    "top_left_action": {
+      "rel_x": 0.05,
+      "rel_y": 0.05
+    },
+    "bottom_input_line": {
+      "rel_x": 0.5,
+      "rel_y": 0.9
+    }
   }
 }
