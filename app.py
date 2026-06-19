@@ -97,8 +97,47 @@ workflow.add_conditional_edges("parse_intent", safety_gate_condition, {"execute_
 workflow.add_edge("execute_macros", END)
 gm_engine = workflow.compile(checkpointer=memory)
 
+
+
+
 if __name__ == "__main__":
+    from langgraph.graph import END
     print("======================================================")
     print("GM AI v1.7 -- Comprehensive Context Modules Engaged")
     print("======================================================")
     user_input = input("Describe what you want to do in simple/broken English: ")
+
+    state = {
+        "raw_user_input": user_input,
+        "captured_context": "",
+        "extracted_entities": {"urls":[], "emails":[], "windows_paths":[], "numerical_ledgers":[]},
+        "normalized_intent": {},
+        "proposed_actions": [],
+        "approval_status": "pending"
+    }
+    
+    # 1. Run through context discovery and action compilation
+    for event in gm_engine.stream(state, config={"configurable": {"thread_id": "global_session"}}):
+        for node_name, node_output in event.items():
+            print(f"\n[GRAPH STATE TRANSITION] Completed Node: {node_name}")
+            if node_output:
+                state.update(node_output)
+
+    # 2. Intercept for validation signing
+    if state.get("proposed_actions"):
+        print("\n=========== 🛡️ GM AI BOT-SITTER SCREEN PREVIEW ===========")
+        print(f"Captured OCR Context Preview: {state.get('captured_context', '')[:120]}...")
+        print("\nProposed Automation Steps Blueprint:")
+        for idx, step in enumerate(state["proposed_actions"], 1):
+            print(f" [{idx}] Action Mode: {step.get('type')} -> Context: {step.get('payload')}")
+        print("===========================================================")
+        
+        choice = input("\nDo you approve GM AI to execute this plan into your active app? (y/n): ").strip().lower()
+        
+        if choice == 'y':
+            state["approval_status"] = "approved"
+            print("\n[GM AI] Human authorization verified. Deploying hardware execution sequence...")
+            # Fire macro node directly to trigger system operator bridges
+            execute_macros_node(state)
+        else:
+            print("[GM AI] Execution aborted by human bot-sitter. State preserved safely.")
