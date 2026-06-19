@@ -12,6 +12,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
+# Import Phase 5 through Phase 10 comprehensive module catalog
 from src.ingestion.screen_capture import ScreenContextLayer
 from src.ingestion.ocr_reader import GMAScreenOCRReader
 from src.execution.action_bridge import SystemOperatorBridge
@@ -20,6 +21,7 @@ from src.execution.app_bootstrapper import GMAIAppBootstrapper
 from src.execution.macro_player import GMAIMacroPlayer
 from src.ingestion.layout_profiler import GMAILayoutProfiler
 from src.execution.data_extractor import GMAIDataExtractor
+from src.execution.data_sorter import GMAIDataSorter
 
 pyautogui.FAILSAFE = True  
 pyautogui.PAUSE = 0.05     
@@ -44,6 +46,7 @@ bootstrapper = GMAIAppBootstrapper()
 macro_player = GMAIMacroPlayer()
 profiler = GMAILayoutProfiler()
 data_extractor = GMAIDataExtractor()
+data_sorter = GMAIDataSorter()
 
 def capture_context_node(state: GMState) -> Dict:
     print("\n[GM AI] [Eyes Active] Snapshotting screen and running OCR pattern trace matching...")
@@ -68,7 +71,7 @@ def parse_intent_node(state: GMState) -> Dict:
     system_prompt = (
         "You are GM AI, a seamless extension of the human mind. Convert the user's raw, "
         "fragmented instruction into a highly structured JSON automation plan containing an array of 'steps'. "
-        "Each step must be an object with 'type' ('click_element', 'type_text', 'press_key', 'press_hotkey', or 'speak_log') and 'payload'."
+        "Each step must be an object with 'type' ('click_element', 'type_text', 'press_key', 'press_hotkey', 'speak_log', 'run_saved_macro', 'extract_intel', or 'sort_intel') and 'payload'."
     )
     
     prompt_payload = f"Sensed Screen OCR Layout: {state['captured_context']}\nUser Intent Input: {state['raw_user_input']}"
@@ -80,8 +83,12 @@ def parse_intent_node(state: GMState) -> Dict:
     except Exception:
         user_lower = state['raw_user_input'].lower()
         
-        # New Structural Routing Branch Logic for Global Web Search Actions
-        if "google" in user_lower or "lookup" in user_lower or "web search" in user_lower:
+        # New Structural Routing Logic For Algorithmic Data Optimization Requests
+        if "sort" in user_lower or "optimize" in user_lower or "clean" in user_lower:
+            steps = [{"type": "sort_intel", "payload": "run_manifest_optimization"}]
+        elif "save" in user_lower or "extract" in user_lower:
+            steps = [{"type": "extract_intel", "payload": "commit_active_variables"}]
+        elif "google" in user_lower or "lookup" in user_lower:
             steps = [
                 {"type": "click_element", "payload": "chrome.url_bar"},
                 {"type": "type_text", "payload": "google.com"},
@@ -90,18 +97,10 @@ def parse_intent_node(state: GMState) -> Dict:
                 {"type": "type_text", "payload": "World's First Ubiquitous GM AI Engine"},
                 {"type": "press_key", "payload": "enter"}
             ]
-        elif "search" in user_lower or "web field" in user_lower:
-            steps = [
-                {"type": "click_element", "payload": "chrome.search_input"},
-                {"type": "type_text", "payload": "GM AI Omnipresent Core Engine Active"},
-                {"type": "click_element", "payload": "chrome.submit_action"}
-            ]
-        elif "save" in user_lower or "extract" in user_lower:
-            steps = [{"type": "extract_intel", "payload": "commit_active_variables"}]
         else:
             steps = [
                 {"type": "click_element", "payload": "notepad.edit_field"},
-                {"type": "type_text", "payload": "echo Base Pipeline Operational Sequence Loaded!"}
+                {"type": "type_text", "payload": "echo Advanced Pipeline Active!"}
             ]
         structured_steps = {"steps": steps}
 
@@ -124,7 +123,12 @@ def execute_macros_node(state: GMState) -> Dict:
         action_type = step["type"]
         payload = step["payload"]
         
-        if action_type == "extract_intel":
+        if action_type == "sort_intel":
+            # Fire our newly linked data optimization sorter block
+            print(f"[GM AI Engine] Executing algorithmic manifest sorting pass...")
+            data_sorter.run_sort_and_optimize()
+            
+        elif action_type == "extract_intel":
             data_extractor.export_scraped_entities(state["extracted_entities"])
         elif action_type == "run_saved_macro":
             macro_player.execute_replay()
@@ -136,8 +140,6 @@ def execute_macros_node(state: GMState) -> Dict:
                     operator_bridge.layouts = operator_bridge._load_layouts()
                 bootstrapper.ensure_application_running(app_key)
                 operator_bridge.execute_targeted_click(app_key, element_key)
-            else:
-                print(f"[GM AI Error] Invalid click target format: {payload}")
         elif action_type == "type_text":
             operator_bridge.execute_text_input(payload, press_enter=False)
         elif action_type == "press_key":
@@ -165,7 +167,7 @@ gm_engine = workflow.compile(checkpointer=memory)
 if __name__ == "__main__":
     thread_config = {"configurable": {"thread_id": "global_session"}}
     print("======================================================")
-    print("GM AI v1.7 — Global Web Searching Engine Core Active")
+    print("GM AI v1.7 — Algorithmic Sorter Runtime Core Active")
     print("======================================================")
     
     user_input = input("Describe what you want to do in simple/broken English: ")
