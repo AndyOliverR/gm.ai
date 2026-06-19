@@ -15,12 +15,27 @@ class ScreenContextLayer:
         os.makedirs(self.output_dir, exist_ok=True)
         
     def capture_full_display(self) -> str:
-        """Captures the active screen layout and saves a local matrix copy."""
+        """Captures the active screen layout, saves it, and runs a cache cleanup."""
+        self._purge_old_cache_frames(max_age_seconds=60) # Auto-prune old frames
+        
         timestamp = int(time.time())
         filepath = os.path.join(self.output_dir, f"raw_surface_{timestamp}.png")
         screenshot = ImageGrab.grab(all_screens=False)
         screenshot.save(filepath, "PNG")
         return filepath
+
+    def _purge_old_cache_frames(self, max_age_seconds: int = 60):
+        """Removes stale diagnostic screen captures to preserve system disk space."""
+        try:
+            now = time.time()
+            for filename in os.listdir(self.output_dir):
+                if filename.startswith("raw_surface_") and filename.endswith(".png"):
+                    file_path = os.path.join(self.output_dir, filename)
+                    # Check if file creation window exceeds thresholds
+                    if os.path.getmtime(file_path) < (now - max_age_seconds):
+                        os.remove(file_path)
+        except Exception as e:
+            print(f"[GM AI Cache Warning] Failed to clean workspace artifacts: {e}")
 
     def extract_window_bounds(self, target_title: str = "ActiveWindow") -> Tuple[int, int, int, int]:
         """Dynamically grabs the precise screen bounds of whichever window is currently in focus."""
@@ -29,7 +44,6 @@ class ScreenContextLayer:
         if hwnd != 0:
             title = win32gui.GetWindowText(hwnd)
             left, top, right, bottom = win32gui.GetWindowRect(hwnd)
-            # Filter out minimized window anomalies
             if left >= -10000 and top >= -10000:
                 print(f"[GM AI] Intercepted Focused Window: '{title}'")
                 return (left, top, right, bottom)
@@ -39,10 +53,8 @@ class ScreenContextLayer:
 
 if __name__ == "__main__":
     parser = ScreenContextLayer()
-    print("[GM AI] Initializing Live Screen Context Layer capture test...")
+    print("[GM AI] Running automated Screen Context Layer cache-clearing execution test...")
     path = parser.capture_full_display()
-    print(f"[GM AI] Context Frame saved successfully to: {path}")
-    
-    # Track whatever window is active right now
+    print(f"[GM AI] Active Context Frame isolated at: {path}")
     bounds = parser.extract_window_bounds()
-    print(f"[GM AI] Extracted Window Bounds Target: {bounds}")
+    print(f"[GM AI] Dynamic Window Boundaries: {bounds}")
