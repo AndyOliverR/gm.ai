@@ -11,9 +11,9 @@ try:
 except ImportError:
     raise ImportError("Dependency missing. Please run: pip install websockets")
 
-from app import gm_engine
+# Import the core LangGraph state engine, the execute node, and our audit tracker
+from app import gm_engine, execute_macros_node
 from src.execution.audit_ledger import GMAIAuditLedger
-# Import the newly verified Phase 17 Background Daemon module
 from src.execution.background_scheduler import GMAIBackgroundDaemon
 
 class GMANetworkBroker:
@@ -21,12 +21,11 @@ class GMANetworkBroker:
         self.host = host
         self.port = port
         self.ledger = GMAIAuditLedger()
-        # Spin up a daemon worker thread instance set to audit on a 10 second interval
         self.daemon_guard = GMAIBackgroundDaemon(check_interval_sec=10.0)
-        print(f"[GM AI Broker] Initialized Isolated Channel Network Broker on {self.host}:{self.port}")
+        print(f"[GM AI Broker] Initialized Remote Macro Execution Broker on {self.host}:{self.port}")
 
     async def handle_stream(self, websocket):
-        """Intercepts telemetry, extracts channel partition IDs, and runs isolated workflows."""
+        """Intercepts telemetry, extracts channel partition IDs, and runs workflows with physical macro injection."""
         remote_address = websocket.remote_address
         print(f"\n[GM AI Broker] Active network connection hook: {remote_address}")
 
@@ -69,9 +68,11 @@ class GMANetworkBroker:
 
                         user_approval = input("\n[Bot-Sitter Authorization] Approve this wireless remote plan? (y/n): ")
                         if user_approval.lower() == 'y':
-                            gm_engine.update_state(thread_config, {"approval_status": "approved"}, as_node="parse_intent")
-                            for event in gm_engine.stream(None, thread_config):
-                                pass
+                            current_state["approval_status"] = "approved"
+                            print("\n[GM AI Broker] Wireless approval signed. Injecting hardware execution chain...")
+                            
+                            # Phase 19 Fix: Explicitly fire macro execution module to trigger mouse/keyboard commands locally
+                            execute_macros_node(current_state)
 
                             self.ledger.commit_transaction(intent=remote_intent, status="success_completed", device=device_source, channel=channel_id)
                             print(f"[GM AI Broker] Task successfully executed on channel: {channel_id}")
@@ -88,7 +89,6 @@ class GMANetworkBroker:
     async def main_loop(self):
         async with websockets.serve(self.handle_stream, self.host, self.port):
             print("[GM AI Broker] Multi-Tenant Gateway Online. Ready...")
-            # Automatically activate the background diagnostic runner thread alongside network start
             self.daemon_guard.start()
             await asyncio.Future()
 
@@ -97,7 +97,6 @@ class GMANetworkBroker:
             asyncio.run(self.main_loop())
         except KeyboardInterrupt:
             print("\n[GM AI Broker] Shutting down network listeners cleanly.")
-            # Ensure the worker daemon stops running if the user terminates the execution loop
             self.daemon_guard.stop()
 
 if __name__ == "__main__":
