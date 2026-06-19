@@ -11,17 +11,19 @@ try:
 except ImportError:
     raise ImportError("Dependency missing. Please run: pip install websockets")
 
-# Import the core LangGraph state graph compilation from your main app entry point
+# Import the core LangGraph state engine and our audit tracker
 from app import gm_engine
+from src.execution.audit_ledger import GMANetworkAuditLedger
 
 class GMANetworkBroker:
     def __init__(self, host: str = "0.0.0.0", port: int = 8765):
         self.host = host
         self.port = port
-        print(f"[GM AI Broker] Initialized Integrated Network Broker on {self.host}:{self.port}")
+        self.ledger = GMANetworkAuditLedger()
+        print(f"[GM AI Broker] Initialized Audited Network Broker on {self.host}:{self.port}")
 
     async def handle_stream(self, websocket):
-        """Intercepts remote wireless telemetry and pipes it directly into the LangGraph loop."""
+        """Intercepts remote wireless telemetry, passes it to LangGraph, and records results."""
         remote_address = websocket.remote_address
         print(f"\n[GM AI Broker] Active network connection hook: {remote_address}")
         
@@ -35,12 +37,10 @@ class GMANetworkBroker:
                     print(f"\n[GM AI Network Task] Received via {device_source}: '{remote_intent}'")
                     
                     if remote_intent:
-                        # Feed the incoming wireless phrase straight into your live workspace engine
-                        print(f"[GM AI Broker] Initializing state graph pipeline loop for network trigger...")
+                        print(f"[GM AI Broker] Initializing state graph pipeline loop...")
                         thread_config = {"configurable": {"thread_id": f"network_{device_source.replace(' ', '_')}"}}
                         initial_state = {"raw_user_input": remote_intent, "approval_status": "pending"}
                         
-                        # Trigger the Eyes & Brain nodes over the air up to the safety freeze point
                         for event in gm_engine.stream(initial_state, thread_config):
                             pass
                             
@@ -54,21 +54,24 @@ class GMANetworkBroker:
                             print(f" [{idx}] Action Mode: {step['type']} -> Context: {step['payload']}")
                         print("====================================================================")
                         
-                        # Send status update back to the controlling device screen
                         response = {
                             "status": "AWAITING_HUMAN_CONFIRMATION",
                             "msg": "Automation blueprint generated. Awaiting physical operator confirmation on host machine."
                         }
                         await websocket.send(json.dumps(response))
                         
-                        # Enforce Safety Gate: require local host check before injecting key vectors
                         user_approval = input("\n[Bot-Sitter Authorization] Approve this wireless remote plan? (y/n): ")
                         if user_approval.lower() == 'y':
                             gm_engine.update_state(thread_config, {"approval_status": "approved"}, as_node="parse_intent")
                             for event in gm_engine.stream(None, thread_config):
                                 pass
+                            
+                            # Log the successful deployment to our local audit trail
+                            self.ledger.log_action(device_source, remote_intent, status="EXECUTED")
                             print("[GM AI Broker] Remote task executed successfully.")
                         else:
+                            # Log the rejection for user auditing visibility
+                            self.ledger.log_action(device_source, remote_intent, status="REJECTED_BY_USER")
                             print("[GM AI Broker] Remote deployment blocked by host user.")
                     
                 except json.JSONDecodeError:
@@ -79,7 +82,7 @@ class GMANetworkBroker:
 
     async def main_loop(self):
         async with websockets.serve(self.handle_stream, self.host, self.port):
-            print("[GM AI Broker] Dynamic Cross-Device Gateway Online. Ready for remote commands...")
+            print("[GM AI Broker] Audited Cross-Device Gateway Online. Ready...")
             await asyncio.Future()
 
     def start_server(self):
