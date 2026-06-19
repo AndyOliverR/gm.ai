@@ -12,7 +12,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-# Import custom core layout engine modules
+# Import Phase 5 through Phase 10 unified modular components
 from src.ingestion.screen_capture import ScreenContextLayer
 from src.ingestion.ocr_reader import GMAScreenOCRReader
 from src.execution.action_bridge import SystemOperatorBridge
@@ -25,6 +25,7 @@ from src.execution.data_extractor import GMAIDataExtractor
 pyautogui.FAILSAFE = True  
 pyautogui.PAUSE = 0.05     
 
+# Define the Structured State of the Human Mind Extension
 class GMState(TypedDict):
     raw_user_input: str          
     captured_context: str        
@@ -65,7 +66,6 @@ def capture_context_node(state: GMState) -> Dict:
 def parse_intent_node(state: GMState) -> Dict:
     print("[GM AI] [Brain Active] Normalizing instruction pipelines via Ollama...")
     
-    # Load trained cognitive profiles dynamically to pass as high-level context
     active_profiles_context = ""
     roles_dir = "storage/job_roles/"
     if os.path.exists(roles_dir):
@@ -74,7 +74,7 @@ def parse_intent_node(state: GMState) -> Dict:
                 try:
                     with open(os.path.join(roles_dir, file), "r") as f:
                         prof = json.load(f)
-                        active_profiles_context += f"Trained Role: {prof['role_title']} | Required System Tools: {prof['required_system_tools']}\n"
+                        active_profiles_context += f"Trained Context: {prof['role_title']} | Details: {prof['raw_capabilities_context'][:200]}\n"
                 except Exception:
                     pass
 
@@ -82,7 +82,7 @@ def parse_intent_node(state: GMState) -> Dict:
     system_prompt = (
         "You are GM AI, a seamless extension of the human mind. Convert the user's raw, "
         "fragmented instruction into a highly structured JSON automation plan containing an array of 'steps'.\n"
-        f"Leverage these trained cognitive application parameters if applicable:\n{active_profiles_context}"
+        f"Leverage these engrained cognitive meta parameters to guide your plan routing:\n{active_profiles_context}"
     )
     
     prompt_payload = (
@@ -97,19 +97,25 @@ def parse_intent_node(state: GMState) -> Dict:
         structured_steps = json.loads(response['response'])
     except Exception:
         user_lower = state['raw_user_input'].lower()
-        if "assistant" in user_lower or "automate role" in user_lower:
-            # Smart conditional fallback matching our trained profile expectations
+        
+        # New Structural Routing Branch Logic for Multi-Field Web Automation Processing Requests
+        if "search" in user_lower or "web field" in user_lower or "manipulate" in user_lower:
             steps = [
-                {"type": "click_element", "payload": "chrome.browser_window"},
-                {"type": "type_text", "payload": "GM AI executing Assistant workflow..."},
-                {"type": "click_element", "payload": "notepad.edit_field"}
+                {"type": "click_element", "payload": "chrome.search_input"},
+                {"type": "type_text", "payload": "GM AI Omnipresent Core Engine Active"},
+                {"type": "click_element", "payload": "chrome.submit_action"}
             ]
         elif "save" in user_lower or "extract" in user_lower:
             steps = [{"type": "extract_intel", "payload": "commit_active_variables"}]
+        elif "profile" in user_lower or "scan window" in user_lower or "map" in user_lower:
+            steps = [
+                {"type": "click_element", "payload": "custom_target_app.center_focus"},
+                {"type": "type_text", "payload": "echo Adaptive Profiler Configured!"}
+            ]
         else:
             steps = [
                 {"type": "click_element", "payload": "notepad.edit_field"},
-                {"type": "type_text", "payload": "echo Cognitive Engine Standard Sequence Loaded!"}
+                {"type": "type_text", "payload": "echo Base Pipeline Operational Sequence Loaded!"}
             ]
         structured_steps = {"steps": steps}
 
@@ -171,7 +177,7 @@ gm_engine = workflow.compile(checkpointer=memory)
 if __name__ == "__main__":
     thread_config = {"configurable": {"thread_id": "global_session"}}
     print("======================================================")
-    print("GM AI v1.7 — Role-Aware Adaptive Ingestion Active")
+    print("GM AI v1.7 — Omnipresent Multi-Field Web Engine Active")
     print("======================================================")
     
     user_input = input("Describe what you want to do in simple/broken English: ")
