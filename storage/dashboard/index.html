@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GM AI v1.7 -- Telemetry Dashboard Portal</title>
+    <title>GM AI v1.7 -- Partitioned Telemetry Dashboard Portal</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background: #0f172a; color: #f8fafc; padding: 30px; }
@@ -13,34 +13,40 @@
         .badge { padding: 6px 14px; font-size: 12px; font-weight: 700; border-radius: 20px; letter-spacing: 0.5px; text-transform: uppercase; }
         .status-online { background: #22c55e; color: #ffffff; box-shadow: 0 0 10px rgba(34,197,94,0.3); }
         .status-offline { background: #ef4444; color: #ffffff; box-shadow: 0 0 10px rgba(239,68,68,0.3); }
-        .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
-        .card { background: #1e293b; border-radius: 12px; border: 1px solid #334155; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .card h2 { font-size: 16px; color: #f1f5f9; margin-bottom: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-left: 4px solid #38bdf8; padding-left: 10px; }
+        .layout-container { display: grid; grid-template-columns: 280px 1fr 350px; gap: 24px; }
+        .card { background: #1e293b; border-radius: 12px; border: 1px solid #334155; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 14px; color: #f1f5f9; margin-bottom: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-left: 4px solid #38bdf8; padding-left: 10px; }
+        .channel-item { display: block; width: 100%; padding: 12px 16px; margin-bottom: 8px; background: #090d16; border: 1px solid #1e293b; border-radius: 8px; color: #94a3b8; text-align: left; cursor: pointer; transition: all 0.2s; font-size: 13px; font-weight: 600; }
+        .channel-item:hover { border-color: #38bdf8; color: #f8fafc; }
+        .channel-item.active { background: rgba(56,189,248,0.1); border-color: #38bdf8; color: #38bdf8; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { font-size: 12px; text-transform: uppercase; color: #94a3b8; padding: 12px 16px; border-bottom: 2px solid #334155; font-weight: 600; }
-        td { font-size: 14px; padding: 14px 16px; border-bottom: 1px solid #334155; color: #e2e8f0; }
-        tr:hover { background: rgba(56,189,248,0.04); }
-        .stream-box { background: #090d16; border-radius: 8px; border: 1px solid #1e293b; height: 350px; overflow-y: auto; padding: 16px; font-family: 'Courier New', Courier, monospace; font-size: 12px; color: #38bdf8; line-height: 1.6; }
+        th { font-size: 11px; text-transform: uppercase; color: #94a3b8; padding: 12px; border-bottom: 2px solid #334155; font-weight: 600; }
+        td { font-size: 13px; padding: 12px; border-bottom: 1px solid #334155; color: #e2e8f0; }
+        .stream-box { background: #090d16; border-radius: 8px; border: 1px solid #1e293b; height: 450px; overflow-y: auto; padding: 16px; font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #38bdf8; line-height: 1.6; }
         .input-group { display: flex; gap: 12px; margin-top: 20px; }
-        input[type="text"] { flex: 1; background: #090d16; border: 1px solid #334155; border-radius: 8px; padding: 12px 16px; color: #f8fafc; font-size: 14px; outline: none; }
-        input[type="text"]:focus { border-color: #38bdf8; }
-        button { background: #38bdf8; color: #0f172a; border: none; border-radius: 8px; padding: 12px 24px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s; }
-        button:hover { background: #0ea5e9; }
-        .status-cell { font-weight: 700; font-size: 12px; text-transform: uppercase; }
+        input[type="text"] { flex: 1; background: #090d16; border: 1px solid #334155; border-radius: 8px; padding: 12px; color: #f8fafc; font-size: 13px; outline: none; }
+        button { background: #38bdf8; color: #0f172a; border: none; border-radius: 8px; padding: 12px 20px; font-weight: 700; font-size: 13px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="title">
-            <h1>GM AI Agent Execution Portal</h1>
-            <p>Persistent High-Frequency Telemetry Audit Dashboard View</p>
+            <h1>GM AI Multi-Tenant Portal</h1>
+            <p>Phase 16 - Isolated Workspace Channel Segment Views</p>
         </div>
         <div id="statusBadge" class="badge status-offline">Connecting</div>
     </div>
 
-    <div class="grid">
+    <div class="layout-container">
         <div class="card">
-            <h2>Relational System Action Audit Ledger</h2>
+            <h2>Active Tenant Channels</h2>
+            <div id="channelContainer">
+                <button class="channel-item active" onclick="switchChannel('all')">All Shared Events</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Channel Isolated Audit Ledger</h2>
             <table>
                 <thead>
                     <tr>
@@ -51,11 +57,11 @@
                     </tr>
                 </thead>
                 <tbody id="auditTableBody">
-                    <!-- Dynamic socket records append here -->
+                    <!-- Dynamic multi-user data append here -->
                 </tbody>
             </table>
             <div class="input-group">
-                <input type="text" id="cmdInput" placeholder="Type standalone agent execution instruction...">
+                <input type="text" id="cmdInput" placeholder="Dispatch instructions to active channel context...">
                 <button onclick="dispatchCommand()">Run Action</button>
             </div>
         </div>
@@ -68,9 +74,13 @@
 
     <script>
         let ws;
+        let activeChannel = 'all';
+        const trackedChannels = new Set();
+        
         const statusBadge = document.getElementById('statusBadge');
         const logStream = document.getElementById('logStream');
         const tableBody = document.getElementById('auditTableBody');
+        const channelContainer = document.getElementById('channelContainer');
 
         function connectSocket() {
             ws = new WebSocket('ws://' + (window.location.hostname || 'localhost') + ':8765');
@@ -78,42 +88,79 @@
             ws.onopen = () => {
                 statusBadge.textContent = 'ONLINE';
                 statusBadge.className = 'badge status-online';
-                appendLog('System Connection Secured. Streaming cross-device telemetry active.');
+                appendLog('Multi-tenant WebSocket connection secured.');
             };
 
             ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    appendLog('Processed Incoming Socket Event.');
+                    appendLog('Incoming multi-tenant transaction packet received.');
                     
                     const id = data.id || 'NEW';
-                    const device = data.device || 'Remote Display';
-                    const intent = data.command || data.msg || 'Unknown Intent';
+                    const device = data.device || 'Remote Client';
+                    const intent = data.command || data.msg || 'Unknown Operation';
                     const status = data.status || 'PENDING_AUTH';
-                    
+                    const channel = data.channel || 'main_session';
+
+                    // Track new active channels dynamically
+                    if (!trackedChannels.has(channel)) {
+                        trackedChannels.add(channel);
+                        renderChannelButtons();
+                    }
+
                     let statusColor = '#38bdf8';
                     if (status.includes('success') || status.includes('EXECUTED')) statusColor = '#22c55e';
                     if (status.includes('rejected') || status.includes('ERROR')) statusColor = '#ef4444';
 
-                    const newRow = `<tr>
+                    const newRow = `<tr class="audit-row" data-channel="${channel}">
                         <td>#${id}</td>
                         <td><strong>${device}</strong></td>
                         <td>${intent}</td>
-                        <td class="status-cell" style="color: ${statusColor};">${status.replace('_', ' ')}</td>
+                        <td style="color: ${statusColor}; font-weight:700; font-size:12px;">${status.replace('_', ' ')}</td>
                     </tr>`;
                     
                     tableBody.innerHTML = newRow + tableBody.innerHTML;
+                    applyFilter();
+                    
                 } catch(e) {
-                    appendLog('Raw Data Stream: ' + event.data);
+                    appendLog('Raw Data Matrix: ' + event.data);
                 }
             };
 
             ws.onclose = () => {
                 statusBadge.textContent = 'OFFLINE';
                 statusBadge.className = 'badge status-offline';
-                appendLog('Connection Dropped. Retrying connection handshake sequence...');
+                appendLog('Handshake dropped. Reconnecting...');
                 setTimeout(connectSocket, 5000);
             };
+        }
+
+        function renderChannelButtons() {
+            // Keep the baseline master filter clear button option safe
+            let html = `<button class="channel-item ${activeChannel === 'all' ? 'active' : ''}" onclick="switchChannel('all')">All Shared Events</button>`;
+            trackedChannels.forEach(ch => {
+                html += `<button class="channel-item ${activeChannel === ch ? 'active' : ''}" onclick="switchChannel('${ch}')">Channel: ${ch.toUpperCase()}</button>`;
+            });
+            channelContainer.innerHTML = html;
+        }
+
+        function switchChannel(channelName) {
+            activeChannel = channelName;
+            renderChannelButtons();
+            applyFilter();
+            appendLog(`Viewport partition filter swapped to: ${channelName.toUpperCase()}`);
+        }
+
+        function applyFilter() {
+            const rows = document.querySelectorAll('.audit-row');
+            rows.forEach(row => {
+                const rowChannel = row.getAttribute('data-channel');
+                if (activeChannel === 'all' || rowChannel === activeChannel) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         }
 
         function appendLog(msg) {
@@ -129,15 +176,16 @@
 
             const payload = {
                 device: "Web UI Dashboard",
-                command: cmdText
+                command: cmdText,
+                channel: activeChannel === 'all' ? 'main_session' : activeChannel
             };
 
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify(payload));
-                appendLog('Dispatched: "' + cmdText + '"');
+                appendLog(`Dispatched command to channel context [${payload.channel.toUpperCase()}]: "${cmdText}"`);
                 input.value = '';
             } else {
-                appendLog('Error: Socket server offline. Dispatch aborted.');
+                appendLog('Error: Gateway connection down.');
             }
         }
 
