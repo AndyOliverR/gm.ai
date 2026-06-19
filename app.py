@@ -13,7 +13,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 # Dynamically ensure top-level project module access
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-# Import custom core layout engine modules
+# Import Phase 5, 6, 7 & 8 unified engine components
 from src.ingestion.screen_capture import ScreenContextLayer
 from src.ingestion.ocr_reader import GMAScreenOCRReader
 from src.execution.action_bridge import SystemOperatorBridge
@@ -24,11 +24,11 @@ from src.execution.app_bootstrapper import GMAIAppBootstrapper
 pyautogui.FAILSAFE = True  
 pyautogui.PAUSE = 0.05     
 
-# 1. Define the Structured State of the Human Mind Extension (Now with Data Scrape Arrays)
+# 1. Define the Structured State of the Human Mind Extension
 class GMState(TypedDict):
     raw_user_input: str          
     captured_context: str        
-    extracted_entities: Dict     # Structured regex assets scraped right off the canvas
+    extracted_entities: Dict     
     normalized_intent: Dict      
     proposed_actions: List[Dict] 
     approval_status: str         
@@ -45,7 +45,7 @@ operator_bridge = SystemOperatorBridge()
 voice_auditor = GMAIVoiceAuditor()
 bootstrapper = GMAIAppBootstrapper()
 
-# 2. Node: Capture Screen Context (The AI's Eyes - Now with Regex Profiling)
+# 2. Node: Capture Screen Context (The AI's Eyes)
 def capture_context_node(state: GMState) -> Dict:
     print("\n[GM AI] [Eyes Active] Snapshotting screen and running OCR pattern trace matching...")
     cached_frame_path = screen_layer.capture_full_display()
@@ -55,7 +55,6 @@ def capture_context_node(state: GMState) -> Dict:
         clipboard_text = pyperclip.paste().strip()
         extracted_text = f"[OCR Fallback/Clipboard] {clipboard_text if clipboard_text else 'General UI Canvas Focus'}"
         
-    # Execute our pattern matching lookup directly on the raw text layer
     scraped_entities = ocr_engine.extract_structural_entities(extracted_text)
     
     return {
@@ -63,7 +62,7 @@ def capture_context_node(state: GMState) -> Dict:
         "extracted_entities": scraped_entities
     }
 
-# 3. Node: Parse Intent via Local Ollama (The AI's Brain - Senses extracted data maps)
+# 3. Node: Parse Intent via Local Ollama (The AI's Brain - Custom Router for Web Targets)
 def parse_intent_node(state: GMState) -> Dict:
     print("[GM AI] [Brain Active] Normalizing instruction pipelines via Ollama...")
     ollama_url = "http://localhost:11434/api/generate"
@@ -74,7 +73,6 @@ def parse_intent_node(state: GMState) -> Dict:
         "Each step must be an object with 'type' ('click_element', 'type_text', 'press_key', 'press_hotkey', or 'speak_log') and 'payload'."
     )
     
-    # We append the extracted entities directly into the LLM context pool
     prompt_payload = (
         f"Sensed Screen OCR Layout: {state['captured_context']}\n"
         f"Scraped Struct Entities: {json.dumps(state['extracted_entities'])}\n"
@@ -93,19 +91,20 @@ def parse_intent_node(state: GMState) -> Dict:
         structured_steps = json.loads(response['response'])
     except Exception:
         user_lower = state['raw_user_input'].lower()
-        if "read" in user_lower or "log" in user_lower or "timeline" in user_lower or "speak" in user_lower:
+        # Phase 8 Structural Router Injection Fallbacks
+        if "chrome" in user_lower or "browser" in user_lower or "web" in user_lower:
+            steps = [
+                {"type": "click_element", "payload": "chrome.browser_window"},
+                {"type": "type_text", "payload": "GM AI Omnipresent Engine Online!"}
+            ]
+        elif "read" in user_lower or "log" in user_lower or "timeline" in user_lower or "speak" in user_lower:
             steps = [{"type": "speak_log", "payload": "trigger_timeline_audio"}]
         elif "task manager" in user_lower or "hotkey" in user_lower:
             steps = [{"type": "press_hotkey", "payload": "ctrl+shift+esc"}]
-        elif "click" in user_lower or "notepad" in user_lower:
-            steps = [
-                {"type": "click_element", "payload": "notepad.edit_field"},
-                {"type": "type_text", "payload": "echo Pattern-Aware Context Active!"}
-            ]
         else:
             steps = [
-                {"type": "type_text", "payload": "GM AI Automated Entry"},
-                {"type": "press_key", "payload": "enter"}
+                {"type": "click_element", "payload": "notepad.edit_field"},
+                {"type": "type_text", "payload": "echo Base Pipeline Operational Sequence Complete!"}
             ]
         structured_steps = {"steps": steps}
 
@@ -121,7 +120,7 @@ def safety_gate_condition(state: GMState) -> str:
         return "execute_macros"
     return END 
 
-# 5. Node: Execute Automation via Peripheral Injection
+# 5. Node: Execute Automation via Peripheral Injection (With App/Browser Target Protections)
 def execute_macros_node(state: GMState) -> Dict:
     print("\n[GM AI] [System Actions Active] Running pre-execution self-healing path validations...")
     time.sleep(1.0) 
@@ -133,6 +132,7 @@ def execute_macros_node(state: GMState) -> Dict:
         if action_type == "click_element":
             if "." in payload:
                 app_key, element_key = payload.split(".", 1)
+                # Auto-heal or mount web applications or classic programs dynamically
                 bootstrapper.ensure_application_running(app_key)
                 operator_bridge.execute_targeted_click(app_key, element_key)
             else:
@@ -174,7 +174,7 @@ gm_engine = workflow.compile(checkpointer=memory)
 if __name__ == "__main__":
     thread_config = {"configurable": {"thread_id": "global_session"}}
     print("======================================================")
-    print("GM AI v1.7 — Pattern-Aware Vision Engine Core Active")
+    print("GM AI v1.7 — Browser & Process-Aware Hybrid Core Active")
     print("======================================================")
     
     user_input = input("Describe what you want to do in simple/broken English: ")
