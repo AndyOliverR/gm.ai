@@ -2,19 +2,20 @@
 title GM AI Core Matrix Orchestrator
 cls
 echo ======================================================
-echo       GM AI v1.5 -- CROSS-DEVICE AGENT WORKSPACE      
+echo       GM AI v1.7 -- CROSS-DEVICE AGENT WORKSPACE      
 echo ======================================================
 echo [*] Status: Initializing deep framework modules...
 echo [*] Directory: %CD%
 
-:: Validate underlying project configuration presence
 if not exist gm_memory.db (
     echo [!] Warning: Relational memory state ledger missing. Building local instance...
 )
 
 echo [*] Target: Starting secure background network telemetry brokers...
-:: Launch the audited WebSocket server pipeline inside a secondary concurrent shell
 start "GM AI Network Broker Server" cmd /k "python src\communication\socket_broker.py"
+
+echo [*] Target: Initializing automated background telemetry task schedulers...
+start "GM AI Telemetry Task Daemon" cmd /k "python src\execution\task_scheduler.py"
 
 echo [*] Target: Initializing primary human interactive console environment...
 echo ======================================================
