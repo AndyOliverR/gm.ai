@@ -22,6 +22,7 @@ from src.execution.macro_player import GMAIMacroPlayer
 from src.ingestion.layout_profiler import GMAILayoutProfiler
 from src.execution.data_extractor import GMAIDataExtractor
 from src.execution.data_sorter import GMAIDataSorter
+from src.execution.backup_manager import GMAIBackupManager
 
 pyautogui.FAILSAFE = True  
 pyautogui.PAUSE = 0.05     
@@ -47,6 +48,7 @@ macro_player = GMAIMacroPlayer()
 profiler = GMAILayoutProfiler()
 data_extractor = GMAIDataExtractor()
 data_sorter = GMAIDataSorter()
+backup_manager = GMAIBackupManager()
 
 def capture_context_node(state: GMState) -> Dict:
     print("\n[GM AI] [Eyes Active] Snapshotting screen and running OCR pattern trace matching...")
@@ -71,7 +73,7 @@ def parse_intent_node(state: GMState) -> Dict:
     system_prompt = (
         "You are GM AI, a seamless extension of the human mind. Convert the user's raw, "
         "fragmented instruction into a highly structured JSON automation plan containing an array of 'steps'. "
-        "Each step must be an object with 'type' ('click_element', 'type_text', 'press_key', 'press_hotkey', 'speak_log', 'run_saved_macro', 'extract_intel', or 'sort_intel') and 'payload'."
+        "Each step must be an object with 'type' ('click_element', 'type_text', 'press_key', 'press_hotkey', 'speak_log', 'run_saved_macro', 'extract_intel', 'sort_intel', or 'run_backup') and 'payload'."
     )
     
     prompt_payload = f"Sensed Screen OCR Layout: {state['captured_context']}\nUser Intent Input: {state['raw_user_input']}"
@@ -83,8 +85,10 @@ def parse_intent_node(state: GMState) -> Dict:
     except Exception:
         user_lower = state['raw_user_input'].lower()
         
-        # New Structural Routing Logic For Algorithmic Data Optimization Requests
-        if "sort" in user_lower or "optimize" in user_lower or "clean" in user_lower:
+        # New Structural Routing Logic For Archival System Backups
+        if "backup" in user_lower or "archive" in user_lower or "compress" in user_lower:
+            steps = [{"type": "run_backup", "payload": "trigger_folder_archival"}]
+        elif "sort" in user_lower or "optimize" in user_lower or "clean" in user_lower:
             steps = [{"type": "sort_intel", "payload": "run_manifest_optimization"}]
         elif "save" in user_lower or "extract" in user_lower:
             steps = [{"type": "extract_intel", "payload": "commit_active_variables"}]
@@ -100,7 +104,7 @@ def parse_intent_node(state: GMState) -> Dict:
         else:
             steps = [
                 {"type": "click_element", "payload": "notepad.edit_field"},
-                {"type": "type_text", "payload": "echo Advanced Pipeline Active!"}
+                {"type": "type_text", "payload": "echo Core Orchestration Stable!"}
             ]
         structured_steps = {"steps": steps}
 
@@ -123,11 +127,13 @@ def execute_macros_node(state: GMState) -> Dict:
         action_type = step["type"]
         payload = step["payload"]
         
-        if action_type == "sort_intel":
-            # Fire our newly linked data optimization sorter block
-            print(f"[GM AI Engine] Executing algorithmic manifest sorting pass...")
-            data_sorter.run_sort_and_optimize()
+        if action_type == "run_backup":
+            # Fire our newly linked system archive manager
+            print(f"[GM AI Engine] Deploying background workspace compression routine...")
+            backup_manager.execute_directory_backup()
             
+        elif action_type == "sort_intel":
+            data_sorter.run_sort_and_optimize()
         elif action_type == "extract_intel":
             data_extractor.export_scraped_entities(state["extracted_entities"])
         elif action_type == "run_saved_macro":
@@ -140,6 +146,8 @@ def execute_macros_node(state: GMState) -> Dict:
                     operator_bridge.layouts = operator_bridge._load_layouts()
                 bootstrapper.ensure_application_running(app_key)
                 operator_bridge.execute_targeted_click(app_key, element_key)
+            else:
+                print(f"[GM AI Error] Invalid click target format: {payload}")
         elif action_type == "type_text":
             operator_bridge.execute_text_input(payload, press_enter=False)
         elif action_type == "press_key":
@@ -167,7 +175,7 @@ gm_engine = workflow.compile(checkpointer=memory)
 if __name__ == "__main__":
     thread_config = {"configurable": {"thread_id": "global_session"}}
     print("======================================================")
-    print("GM AI v1.7 — Algorithmic Sorter Runtime Core Active")
+    print("GM AI v1.7 — Automated Workspace Backup Core Engaged")
     print("======================================================")
     
     user_input = input("Describe what you want to do in simple/broken English: ")
