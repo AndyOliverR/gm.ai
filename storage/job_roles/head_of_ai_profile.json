@@ -1,0 +1,6 @@
+{
+  "role_title": "Head of AI",
+  "trained_at": "2026-06-19 17:31:55",
+  "required_system_tools": [],
+  "raw_capabilities_context": "\n    You own AI engineering for our client delivery business.\n    Lead the projects. Own technical direction on client work end to end: scope, architecture, and making sure it ships and holds up in production.\n    Build the machine. Stand up the workflows, guardrails, SOPs, and tooling that let a small, senior team deliver.\n    Lead and build a 10x team. Hire, level up, and direct a lean pod where 5 people do the work of 50.\n    Turn a 4-week project into a 4-day sprint with Claude Code workflows, AI agent teams, and systems thinking that multiply output.\n    Work on: workflow automation, AI agents (sales, ops, comms), RAG and document Q&A, LLM integrations, data enrichment pipelines.\n    Tech Landscape: Frontier and open models, embeddings, memory, agentic systems (tool use, orchestration, evals), fine-tuning, computer use, full-stack range, infra, reliability, and custom workflow engines.\n    "
+}
