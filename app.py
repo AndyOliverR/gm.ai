@@ -12,6 +12,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
+# Import Phase 5 through Phase 10 unified modular components
 from src.ingestion.screen_capture import ScreenContextLayer
 from src.ingestion.ocr_reader import GMAScreenOCRReader
 from src.execution.action_bridge import SystemOperatorBridge
@@ -19,10 +20,12 @@ from src.communication.voice_ledger import GMAIVoiceAuditor
 from src.execution.app_bootstrapper import GMAIAppBootstrapper
 from src.execution.macro_player import GMAIMacroPlayer
 from src.ingestion.layout_profiler import GMAILayoutProfiler
+from src.execution.data_extractor import GMAIDataExtractor
 
 pyautogui.FAILSAFE = True  
 pyautogui.PAUSE = 0.05     
 
+# Define the Structured State of the Human Mind Extension
 class GMState(TypedDict):
     raw_user_input: str          
     captured_context: str        
@@ -42,15 +45,13 @@ voice_auditor = GMAIVoiceAuditor()
 bootstrapper = GMAIAppBootstrapper()
 macro_player = GMAIMacroPlayer()
 profiler = GMAILayoutProfiler()
+data_extractor = GMAIDataExtractor()
 
 def capture_context_node(state: GMState) -> Dict:
     print("\n[GM AI] [Eyes Active] Snapshotting screen and running OCR pattern trace matching...")
     cached_frame_path = screen_layer.capture_full_display()
     extracted_text = ocr_engine.extract_text_from_matrix(cached_frame_path)
     
-    if not __file__: # Safety layout constraint fallback guard
-        extracted_text = "SYSTEM_FALLBACK: Active window context layer trace."
-        
     if not extracted_text.strip() or "SYSTEM_FALLBACK" in extracted_text:
         clipboard_text = pyperclip.paste().strip()
         extracted_text = f"[OCR Fallback/Clipboard] {clipboard_text if clipboard_text else 'General UI Canvas Focus'}"
@@ -69,7 +70,7 @@ def parse_intent_node(state: GMState) -> Dict:
     system_prompt = (
         "You are GM AI, a seamless extension of the human mind. Convert the user's raw, "
         "fragmented instruction into a highly structured JSON automation plan containing an array of 'steps'. "
-        "Each step must be an object with 'type' ('click_element', 'type_text', 'press_key', 'press_hotkey', 'speak_log', or 'run_saved_macro') and 'payload'."
+        "Each step must be an object with 'type' ('click_element', 'type_text', 'press_key', 'press_hotkey', 'speak_log', 'run_saved_macro', or 'extract_intel') and 'payload'."
     )
     
     prompt_payload = (
@@ -90,8 +91,10 @@ def parse_intent_node(state: GMState) -> Dict:
     except Exception:
         user_lower = state['raw_user_input'].lower()
         
-        # Phase 10 Smart Context Fallback Registry Routing Controls
-        if "profile" in user_lower or "scan window" in user_lower or "map" in user_lower:
+        # New Structural Routing Step Logic for Data Extraction Requests
+        if "save" in user_lower or "extract" in user_lower or "log data" in user_lower or "dump" in user_lower:
+            steps = [{"type": "extract_intel", "payload": "commit_active_variables"}]
+        elif "profile" in user_lower or "scan window" in user_lower or "map" in user_lower:
             steps = [
                 {"type": "click_element", "payload": "custom_target_app.center_focus"},
                 {"type": "type_text", "payload": "echo Adaptive Profiler Configured!"}
@@ -107,11 +110,6 @@ def parse_intent_node(state: GMState) -> Dict:
             ]
         elif "run macro" in user_lower or "replay" in user_lower or "playback" in user_lower:
             steps = [{"type": "run_saved_macro", "payload": "recorded_macro.json"}]
-        elif "chrome" in user_lower or "browser" in user_lower or "web" in user_lower:
-            steps = [
-                {"type": "click_element", "payload": "chrome.browser_window"},
-                {"type": "type_text", "payload": "GM AI Omnipresent Engine Online!"}
-            ]
         else:
             steps = [
                 {"type": "click_element", "payload": "notepad.edit_field"},
@@ -138,18 +136,22 @@ def execute_macros_node(state: GMState) -> Dict:
         action_type = step["type"]
         payload = step["payload"]
         
-        if action_type == "run_saved_macro":
+        if action_type == "extract_intel":
+            # Fire our newly integrated data extraction module
+            print(f"[GM AI Engine] Parsing extracted entities out of state tree graph...")
+            result = data_extractor.export_scraped_entities(state["extracted_entities"])
+            print(f"[GM AI Engine] Data extraction journal result marker: {result}")
+            
+        elif action_type == "run_saved_macro":
             macro_player.execute_replay()
             
         elif action_type == "click_element":
             if "." in payload:
                 app_key, element_key = payload.split(".", 1)
                 
-                # Phase 10 Adaptive Profiler Trigger: If the app name is not in our registry maps, dynamically scan it now
                 if app_key not in operator_bridge.layouts:
                     print(f"[GM AI Core] Application context '{app_key}' missing from configs. Initializing live element mapper...")
                     profiler.profile_active_window(app_key)
-                    # Reload configuration matrix maps
                     operator_bridge.layouts = operator_bridge._load_layouts()
                 
                 bootstrapper.ensure_application_running(app_key)
@@ -191,7 +193,7 @@ gm_engine = workflow.compile(checkpointer=memory)
 if __name__ == "__main__":
     thread_config = {"configurable": {"thread_id": "global_session"}}
     print("======================================================")
-    print("GM AI v1.7 — Self-Profiling Vision Engine Active")
+    print("GM AI v1.7 — Autonomous Data Extraction Core Engaged")
     print("======================================================")
     
     user_input = input("Describe what you want to do in simple/broken English: ")
