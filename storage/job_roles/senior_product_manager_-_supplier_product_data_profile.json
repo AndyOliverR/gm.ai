@@ -1,0 +1,6 @@
+{
+  "role_title": "Senior Product Manager - Supplier Product Data",
+  "trained_at": "2026-06-19 18:38:23",
+  "required_system_tools": [],
+  "raw_capabilities_context": "\n    Company: Cimpress (Mass Customization Platform - MCP)\n    Domain: Product Catalog / Supplier PIM (Product Information Management)\n    Core Responsibilities: Own the product strategy for Supplier Product Data models, APIs, and supplier integrations. \n    Drive AI-enabled transformation: Data mapping, data quality detection, attribute recommendations, anomaly detection, and AI-assisted workflows with human review, confidence thresholds, and risk controls.\n    Systems Scope: Attributes, pricing, supplier inventory feeds, fulfillment configuration, production constraints, and product launch workflows.\n    Tech Requirements: Strong technical fluency with data models, system constraints, platform tradeoffs, internal data enrichment pipelines, and SaaS commerce backends.\n    "
+}
