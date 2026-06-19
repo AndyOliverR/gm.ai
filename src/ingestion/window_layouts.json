@@ -4,17 +4,43 @@
     "reference_height": 1080
   },
   "notepad": {
-    "edit_field": {"rel_x": 0.5, "rel_y": 0.5},
-    "file_menu": {"rel_x": 0.02, "rel_y": 0.04}
+    "edit_field": {
+      "rel_x": 0.5,
+      "rel_y": 0.5
+    },
+    "file_menu": {
+      "rel_x": 0.02,
+      "rel_y": 0.04
+    }
   },
   "command_prompt": {
-    "center_canvas": {"rel_x": 0.5, "rel_y": 0.5}
+    "center_focus": {
+      "rel_x": 0.5,
+      "rel_y": 0.5
+    },
+    "top_left_action": {
+      "rel_x": 0.05,
+      "rel_y": 0.05
+    },
+    "bottom_input_line": {
+      "rel_x": 0.5,
+      "rel_y": 0.9
+    }
   },
   "chrome": {
-    "browser_window": {"rel_x": 0.5, "rel_y": 0.5},
-    "url_bar": {"rel_x": 0.25, "rel_y": 0.08}
+    "browser_window": {
+      "rel_x": 0.5,
+      "rel_y": 0.5
+    },
+    "url_bar": {
+      "rel_x": 0.25,
+      "rel_y": 0.08
+    }
   },
   "mobile_canvas_fallback": {
-    "center_touch": {"rel_x": 0.5, "rel_y": 0.5}
+    "center_touch": {
+      "rel_x": 0.5,
+      "rel_y": 0.5
+    }
   }
 }
