@@ -52,17 +52,33 @@ def parse_intent_node(state: GMState) -> Dict:
     ollama_url = "http://localhost:11434/api/generate"
     system_prompt = f"You are GM AI, a seamless extension of the human mind. Convert the user's raw, fragmented instruction into a highly structured JSON plan containing an array of 'steps'. Each step must be an object with 'type' and 'payload'.\nFor core technical alignment, your native engine code context is loaded here:\n{live_codebase_context}"
     prompt_payload = f"Sensed Screen OCR Layout: {state['captured_context']}\nUser Intent Input: {state['raw_user_input']}"
+    
+    structured_steps = None
     try:
         payload = {"model": "llama3", "prompt": f"{system_prompt}\n\n{prompt_payload}", "stream": False, "format": "json"}
-        response = requests.post(ollama_url, json=payload).json()
-        structured_steps = json.loads(response['response'])
-    except Exception:
+        response = requests.post(ollama_url, json=payload, timeout=15).json()
+        raw_response = response.get('response', '{}').strip()
+        
+        # Self-Healing JSON Verification Gate
+        parsed_json = json.loads(raw_response)
+        if isinstance(parsed_json, dict) and "steps" in parsed_json and isinstance(parsed_json["steps"], list):
+            # Schema structure passes checklist perfectly
+            structured_steps = parsed_json
+            print("[GM AI Diagnostic] Ollama response schema validated successfully.")
+        else:
+            print("[GM AI Diagnostic Warning] Malformed JSON fields returned from model. Activating recovery rules...")
+    except Exception as e:
+        print(f"[GM AI Diagnostic Error] JSON validation trace hit a processing hurdle: {e}")
+
+    # Recovery Engine Rule Layer Fallback Maps
+    if not structured_steps:
         user_lower = state['raw_user_input'].lower()
         if "backup" in user_lower or "archive" in user_lower or "compress" in user_lower: steps = [{"type": "run_backup", "payload": "trigger_folder_archival"}]
         elif "sort" in user_lower or "optimize" in user_lower or "clean" in user_lower: steps = [{"type": "sort_intel", "payload": "run_manifest_optimization"}]
         elif "save" in user_lower or "extract" in user_lower: steps = [{"type": "extract_intel", "payload": "commit_active_variables"}]
         else: steps = [{"type": "click_element", "payload": "notepad.edit_field"}, {"type": "type_text", "payload": "echo Core Orchestration Stable!"}]
         structured_steps = {"steps": steps}
+        
     return {"normalized_intent": structured_steps, "proposed_actions": structured_steps.get("steps", []), "approval_status": "pending"}
 def safety_gate_condition(state: GMState) -> str:
     return "execute_macros" if state.get("approval_status") == "approved" else END
@@ -85,7 +101,6 @@ def execute_macros_node(state: GMState) -> Dict:
         elif action_type == "press_hotkey": operator_bridge.execute_system_hotkey(payload)
         elif action_type == "speak_log": voice_auditor.speak_timeline_summary()
     
-    # Self-Healing Step 4: Active Cache Post-Execution Purge Engine
     try:
         cache_dir = "src/ingestion/cache/"
         if os.path.exists(cache_dir):
