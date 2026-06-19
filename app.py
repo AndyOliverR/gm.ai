@@ -1,5 +1,4 @@
-﻿
-import os, sys, time, json, requests, pyautogui, keyboard, pyperclip
+﻿import os, sys, time, json, requests, pyautogui, keyboard, pyperclip
 from typing import Dict, TypedDict, Optional, List
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -85,6 +84,21 @@ def execute_macros_node(state: GMState) -> Dict:
         elif action_type == "press_key": pyautogui.press(payload)
         elif action_type == "press_hotkey": operator_bridge.execute_system_hotkey(payload)
         elif action_type == "speak_log": voice_auditor.speak_timeline_summary()
+    
+    # Self-Healing Step 4: Active Cache Post-Execution Purge Engine
+    try:
+        cache_dir = "src/ingestion/cache/"
+        if os.path.exists(cache_dir):
+            purged_count = 0
+            for filename in os.listdir(cache_dir):
+                if filename.startswith("raw_surface_") and filename.endswith(".png"):
+                    os.remove(os.path.join(cache_dir, filename))
+                    purged_count += 1
+            if purged_count > 0:
+                print(f"[GM AI Cache Autopilot] Session completed. Purged {purged_count} temporary canvas frames cleanly.")
+    except Exception as e:
+        print(f"[GM AI Cache Warning] Failed to auto-purge runtime session artifacts: {e}")
+
     print("[GM AI] Operational sequence completed successfully."); return {}
 
 workflow = StateGraph(GMState)
@@ -96,17 +110,12 @@ workflow.add_edge("capture_context", "parse_intent")
 workflow.add_conditional_edges("parse_intent", safety_gate_condition, {"execute_macros": "execute_macros", END: END})
 workflow.add_edge("execute_macros", END)
 gm_engine = workflow.compile(checkpointer=memory)
-
-
-
-
 if __name__ == "__main__":
     from langgraph.graph import END
     print("======================================================")
     print("GM AI v1.7 -- Comprehensive Context Modules Engaged")
     print("======================================================")
     user_input = input("Describe what you want to do in simple/broken English: ")
-
     state = {
         "raw_user_input": user_input,
         "captured_context": "",
@@ -115,15 +124,10 @@ if __name__ == "__main__":
         "proposed_actions": [],
         "approval_status": "pending"
     }
-    
-    # 1. Run through context discovery and action compilation
     for event in gm_engine.stream(state, config={"configurable": {"thread_id": "global_session"}}):
         for node_name, node_output in event.items():
             print(f"\n[GRAPH STATE TRANSITION] Completed Node: {node_name}")
-            if node_output:
-                state.update(node_output)
-
-    # 2. Intercept for validation signing
+            if node_output: state.update(node_output)
     if state.get("proposed_actions"):
         print("\n=========== 🛡️ GM AI BOT-SITTER SCREEN PREVIEW ===========")
         print(f"Captured OCR Context Preview: {state.get('captured_context', '')[:120]}...")
@@ -131,13 +135,10 @@ if __name__ == "__main__":
         for idx, step in enumerate(state["proposed_actions"], 1):
             print(f" [{idx}] Action Mode: {step.get('type')} -> Context: {step.get('payload')}")
         print("===========================================================")
-        
         choice = input("\nDo you approve GM AI to execute this plan into your active app? (y/n): ").strip().lower()
-        
         if choice == 'y':
             state["approval_status"] = "approved"
             print("\n[GM AI] Human authorization verified. Deploying hardware execution sequence...")
-            # Fire macro node directly to trigger system operator bridges
             execute_macros_node(state)
         else:
             print("[GM AI] Execution aborted by human bot-sitter. State preserved safely.")
