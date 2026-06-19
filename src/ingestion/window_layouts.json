@@ -4,57 +4,19 @@
     "reference_height": 1080
   },
   "notepad": {
-    "edit_field": {
-      "rel_x": 0.5,
-      "rel_y": 0.5
-    },
-    "file_menu": {
-      "rel_x": 0.02,
-      "rel_y": 0.04
-    }
+    "edit_field": {"rel_x": 0.5, "rel_y": 0.5},
+    "file_menu": {"rel_x": 0.02, "rel_y": 0.04}
   },
   "command_prompt": {
-    "center_focus": {
-      "rel_x": 0.5,
-      "rel_y": 0.5
-    },
-    "top_left_action": {
-      "rel_x": 0.05,
-      "rel_y": 0.05
-    },
-    "bottom_input_line": {
-      "rel_x": 0.5,
-      "rel_y": 0.9
-    }
+    "center_canvas": {"rel_x": 0.5, "rel_y": 0.5}
   },
   "chrome": {
-    "browser_window": {
-      "rel_x": 0.5,
-      "rel_y": 0.5
-    },
-    "url_bar": {
-      "rel_x": 0.25,
-      "rel_y": 0.08
-    }
+    "browser_window": {"rel_x": 0.5, "rel_y": 0.5},
+    "url_bar": {"rel_x": 0.25, "rel_y": 0.08},
+    "search_input": {"rel_x": 0.45, "rel_y": 0.42},
+    "submit_action": {"rel_x": 0.58, "rel_y": 0.42}
   },
   "mobile_canvas_fallback": {
-    "center_touch": {
-      "rel_x": 0.5,
-      "rel_y": 0.5
-    }
-  },
-  "custom_target_app": {
-    "center_focus": {
-      "rel_x": 0.5,
-      "rel_y": 0.5
-    },
-    "top_left_action": {
-      "rel_x": 0.05,
-      "rel_y": 0.05
-    },
-    "bottom_input_line": {
-      "rel_x": 0.5,
-      "rel_y": 0.9
-    }
+    "center_touch": {"rel_x": 0.5, "rel_y": 0.5}
   }
 }
