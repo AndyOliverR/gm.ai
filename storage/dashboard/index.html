@@ -36,6 +36,7 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
+            margin-bottom: 20px;
         }
         @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
         .card {
@@ -49,13 +50,37 @@
             background: #020617;
             border-radius: 6px;
             padding: 15px;
-            height: 300px;
+            height: 250px;
             overflow-y: auto;
             font-family: monospace;
             font-size: 13px;
             line-height: 1.6;
             color: #34d399;
         }
+        .table-container {
+            overflow-x: auto;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            text-align: left;
+        }
+        th {
+            color: #38bdf8;
+            border-bottom: 2px solid #334155;
+            padding: 10px;
+        }
+        td {
+            border-bottom: 1px solid #334155;
+            padding: 10px;
+            color: #cbd5e1;
+        }
+        tr:hover { background: #334155; }
         .btn {
             background: #0284c7;
             color: white;
@@ -88,15 +113,38 @@
                 <div id="logStream" class="log-box">Connecting to local system socket cluster...<br></div>
             </div>
         </div>
+
+        <!-- Newly Integrated History Audit Table Representation -->
+        <div class="table-container">
+            <h2>🗃️ Persistent Action Ledger Audit Trail</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Device Origin</th>
+                        <th>Command Intent Target</th>
+                        <th>Execution Status Tracker</th>
+                    </tr>
+                </thead>
+                <tbody id="auditTableBody">
+                    <tr>
+                        <td>1</td>
+                        <td>Local Host Core</td>
+                        <td>System Initialization Verification Flow</td>
+                        <td style="color: #22c55e; font-weight: bold;">ACTIVE_BOOT</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
         let ws;
         const statusBadge = document.getElementById('status');
         const logStream = document.getElementById('logStream');
+        const tableBody = document.getElementById('auditTableBody');
 
         function connectSocket() {
-            // Establish dynamic bridge to your local network broker port
             ws = new WebSocket('ws://' + window.location.hostname + ':8765');
 
             ws.onopen = () => {
@@ -107,12 +155,25 @@
 
             ws.onmessage = (event) => {
                 appendLog('Received Packet: ' + event.data);
+                try {
+                    const data = JSON.parse(event.data);
+                    // Dynamically append incoming socket messages directly to our table grid view
+                    if (data.msg) {
+                        const newRow = `<tr>
+                            <td>#</td>
+                            <td>Remote Trigger</td>
+                            <td>${data.msg}</td>
+                            <td style="color: #38bdf8;">PENDING_AUTH</td>
+                        </tr>`;
+                        tableBody.innerHTML = newRow + tableBody.innerHTML;
+                    }
+                } catch(e) {}
             };
 
             ws.onclose = () => {
                 statusBadge.textContent = 'OFFLINE';
                 statusBadge.style.background = '#ef4444';
-                appendLog('Connection Dropped. Retrying connection handshake sequence in 5 seconds...');
+                appendLog('Connection Dropped. Retrying connection handshake sequence...');
                 setTimeout(connectSocket, 5000);
             };
         }
@@ -137,7 +198,6 @@
             input.value = '';
         }
 
-        // Initialize handshake interface loop on page load
         connectSocket();
     </script>
 </body>
