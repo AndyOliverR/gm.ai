@@ -13,12 +13,16 @@ except ImportError:
 
 from app import gm_engine
 from src.execution.audit_ledger import GMAIAuditLedger
+# Import the newly verified Phase 17 Background Daemon module
+from src.execution.background_scheduler import GMAIBackgroundDaemon
 
 class GMANetworkBroker:
     def __init__(self, host: str = "0.0.0.0", port: int = 8765):
         self.host = host
         self.port = port
         self.ledger = GMAIAuditLedger()
+        # Spin up a daemon worker thread instance set to audit on a 10 second interval
+        self.daemon_guard = GMAIBackgroundDaemon(check_interval_sec=10.0)
         print(f"[GM AI Broker] Initialized Isolated Channel Network Broker on {self.host}:{self.port}")
 
     async def handle_stream(self, websocket):
@@ -32,15 +36,12 @@ class GMANetworkBroker:
                     payload = json.loads(message)
                     device_source = payload.get("device", "Remote Display")
                     remote_intent = payload.get("command", "").strip()
-                    
-                    # Phase 15: Extract explicit tenant channel metadata with a safe fallback
                     channel_id = payload.get("channel", f"channel_{device_source.replace(' ', '_').lower()}")
 
                     print(f"\n[GM AI Network Task] Received via Channel '{channel_id}' [{device_source}]: '{remote_intent}'")
 
                     if remote_intent:
                         print(f"[GM AI Broker] Initializing state graph pipeline loop...")
-                        # Thread-level separation ensures LangGraph keeps different user states separated
                         thread_config = {"configurable": {"thread_id": f"session_{channel_id}"}}
                         initial_state = {"raw_user_input": remote_intent, "approval_status": "pending"}
 
@@ -72,7 +73,6 @@ class GMANetworkBroker:
                             for event in gm_engine.stream(None, thread_config):
                                 pass
 
-                            # Enforce Multi-Tenant Data Separation at the database layer
                             self.ledger.commit_transaction(intent=remote_intent, status="success_completed", device=device_source, channel=channel_id)
                             print(f"[GM AI Broker] Task successfully executed on channel: {channel_id}")
                         else:
@@ -88,6 +88,8 @@ class GMANetworkBroker:
     async def main_loop(self):
         async with websockets.serve(self.handle_stream, self.host, self.port):
             print("[GM AI Broker] Multi-Tenant Gateway Online. Ready...")
+            # Automatically activate the background diagnostic runner thread alongside network start
+            self.daemon_guard.start()
             await asyncio.Future()
 
     def start_server(self):
@@ -95,6 +97,8 @@ class GMANetworkBroker:
             asyncio.run(self.main_loop())
         except KeyboardInterrupt:
             print("\n[GM AI Broker] Shutting down network listeners cleanly.")
+            # Ensure the worker daemon stops running if the user terminates the execution loop
+            self.daemon_guard.stop()
 
 if __name__ == "__main__":
     broker = GMANetworkBroker()
