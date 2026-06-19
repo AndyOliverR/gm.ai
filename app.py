@@ -13,11 +13,12 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 # Dynamically ensure top-level project module access
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-# Import Phase 5 & Phase 6 custom engine modules
+# Import Phase 5, 6 & 7 custom engine modules
 from src.ingestion.screen_capture import ScreenContextLayer
 from src.ingestion.ocr_reader import GMAScreenOCRReader
 from src.execution.action_bridge import SystemOperatorBridge
 from src.communication.voice_ledger import GMAIVoiceAuditor
+from src.execution.app_bootstrapper import GMAIAppBootstrapper
 
 # Configure Safety Constraints for Desktop Automation
 pyautogui.FAILSAFE = True  
@@ -41,6 +42,7 @@ screen_layer = ScreenContextLayer()
 ocr_engine = GMAScreenOCRReader()
 operator_bridge = SystemOperatorBridge()
 voice_auditor = GMAIVoiceAuditor()
+bootstrapper = GMAIAppBootstrapper()
 
 # 2. Node: Capture Screen Context (The AI's Eyes)
 def capture_context_node(state: GMState) -> Dict:
@@ -56,7 +58,7 @@ def capture_context_node(state: GMState) -> Dict:
         "captured_context": f"OCR Visual Text Map: '{extracted_text}' | Frame Anchor: {cached_frame_path}"
     }
 
-# 3. Node: Parse Intent via Local Ollama (The AI's Brain - Now supporting Voice narration triggers)
+# 3. Node: Parse Intent via Local Ollama (The AI's Brain)
 def parse_intent_node(state: GMState) -> Dict:
     print("[GM AI] [Brain Active] Normalizing rough instructions via Ollama...")
     ollama_url = "http://localhost:11434/api/generate"
@@ -81,7 +83,6 @@ def parse_intent_node(state: GMState) -> Dict:
         structured_steps = json.loads(response['response'])
     except Exception:
         user_lower = state['raw_user_input'].lower()
-        # Direct structural routing logic if Ollama is offline
         if "read" in user_lower or "log" in user_lower or "timeline" in user_lower or "speak" in user_lower:
             steps = [{"type": "speak_log", "payload": "trigger_timeline_audio"}]
         elif "task manager" in user_lower or "hotkey" in user_lower:
@@ -89,7 +90,7 @@ def parse_intent_node(state: GMState) -> Dict:
         elif "click" in user_lower or "notepad" in user_lower:
             steps = [
                 {"type": "click_element", "payload": "notepad.edit_field"},
-                {"type": "type_text", "payload": "echo Hotkey Processor Online!"}
+                {"type": "type_text", "payload": "echo Self-Healing Bootstrapper Verified!"}
             ]
         else:
             steps = [
@@ -110,9 +111,9 @@ def safety_gate_condition(state: GMState) -> str:
         return "execute_macros"
     return END 
 
-# 5. Node: Execute Automation via Peripheral Injection (The AI's Hands & Mouth)
+# 5. Node: Execute Automation via Peripheral Injection (The AI's Hands, Mouth, and Systems)
 def execute_macros_node(state: GMState) -> Dict:
-    print("\n[GM AI] [Hands/Mouth Active] Executing user-approved system macro sequence...")
+    print("\n[GM AI] [System Actions Active] Running pre-execution self-healing path validations...")
     time.sleep(1.0) 
     
     for step in state["proposed_actions"]:
@@ -122,6 +123,8 @@ def execute_macros_node(state: GMState) -> Dict:
         if action_type == "click_element":
             if "." in payload:
                 app_key, element_key = payload.split(".", 1)
+                # Phase 7 Self-Healing Check: Guarantee the application is active before clicking coordinates
+                bootstrapper.ensure_application_running(app_key)
                 operator_bridge.execute_targeted_click(app_key, element_key)
             else:
                 print(f"[GM AI Error] Invalid click target format: {payload}")
@@ -136,7 +139,6 @@ def execute_macros_node(state: GMState) -> Dict:
             operator_bridge.execute_system_hotkey(payload)
             
         elif action_type == "speak_log":
-            # Fire our voice narrative channel dynamically
             print("[GM AI Engine] Activating verbal audit narrative sequence...")
             voice_auditor.speak_timeline_summary()
             
@@ -163,11 +165,11 @@ gm_engine = workflow.compile(checkpointer=memory)
 if __name__ == "__main__":
     thread_config = {"configurable": {"thread_id": "global_session"}}
     print("======================================================")
-    print("GM AI v1.6 — Integrated Multimodal Vision & Audio Engine Active")
+    print("GM AI v1.7 — Self-Healing Process Engine Core Active")
     print("======================================================")
     
     user_input = input("Describe what you want to do in simple/broken English: ")
-    print("\n[Action Required]: Leave your target application window open and active now.")
+    print("\n[Action Required]: Leave your target application workspace visible now.")
     time.sleep(2.0)
     
     initial_state = {"raw_user_input": user_input, "approval_status": "pending"}
