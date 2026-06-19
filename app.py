@@ -13,18 +13,19 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 # Dynamically ensure top-level project module access
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-# Import Phase 5, 6, 7 & 8 unified engine components
+# Import Phase 5, 6, 7, 8 & 9 unified engine components
 from src.ingestion.screen_capture import ScreenContextLayer
 from src.ingestion.ocr_reader import GMAScreenOCRReader
 from src.execution.action_bridge import SystemOperatorBridge
 from src.communication.voice_ledger import GMAIVoiceAuditor
 from src.execution.app_bootstrapper import GMAIAppBootstrapper
+from src.execution.macro_player import GMAIMacroPlayer
 
 # Configure Safety Constraints for Desktop Automation
 pyautogui.FAILSAFE = True  
 pyautogui.PAUSE = 0.05     
 
-# 1. Define the Structured State of the Human Mind Extension
+# Define the Structured State of the Human Mind Extension
 class GMState(TypedDict):
     raw_user_input: str          
     captured_context: str        
@@ -44,8 +45,9 @@ ocr_engine = GMAScreenOCRReader()
 operator_bridge = SystemOperatorBridge()
 voice_auditor = GMAIVoiceAuditor()
 bootstrapper = GMAIAppBootstrapper()
+macro_player = GMAIMacroPlayer()
 
-# 2. Node: Capture Screen Context (The AI's Eyes)
+# Node: Capture Screen Context (The AI's Eyes)
 def capture_context_node(state: GMState) -> Dict:
     print("\n[GM AI] [Eyes Active] Snapshotting screen and running OCR pattern trace matching...")
     cached_frame_path = screen_layer.capture_full_display()
@@ -62,7 +64,7 @@ def capture_context_node(state: GMState) -> Dict:
         "extracted_entities": scraped_entities
     }
 
-# 3. Node: Parse Intent via Local Ollama (The AI's Brain - Custom Router for Web Targets)
+# Node: Parse Intent via Local Ollama (The AI's Brain - Custom Router for Saved Macros)
 def parse_intent_node(state: GMState) -> Dict:
     print("[GM AI] [Brain Active] Normalizing instruction pipelines via Ollama...")
     ollama_url = "http://localhost:11434/api/generate"
@@ -70,7 +72,7 @@ def parse_intent_node(state: GMState) -> Dict:
     system_prompt = (
         "You are GM AI, a seamless extension of the human mind. Convert the user's raw, "
         "fragmented instruction into a highly structured JSON automation plan containing an array of 'steps'. "
-        "Each step must be an object with 'type' ('click_element', 'type_text', 'press_key', 'press_hotkey', or 'speak_log') and 'payload'."
+        "Each step must be an object with 'type' ('click_element', 'type_text', 'press_key', 'press_hotkey', 'speak_log', or 'run_saved_macro') and 'payload'."
     )
     
     prompt_payload = (
@@ -91,8 +93,10 @@ def parse_intent_node(state: GMState) -> Dict:
         structured_steps = json.loads(response['response'])
     except Exception:
         user_lower = state['raw_user_input'].lower()
-        # Phase 8 Structural Router Injection Fallbacks
-        if "chrome" in user_lower or "browser" in user_lower or "web" in user_lower:
+        # Phase 9 Local Step Routing Override For Physical Macro Execution Triggers
+        if "run macro" in user_lower or "replay" in user_lower or "playback" in user_lower:
+            steps = [{"type": "run_saved_macro", "payload": "recorded_macro.json"}]
+        elif "chrome" in user_lower or "browser" in user_lower or "web" in user_lower:
             steps = [
                 {"type": "click_element", "payload": "chrome.browser_window"},
                 {"type": "type_text", "payload": "GM AI Omnipresent Engine Online!"}
@@ -104,7 +108,7 @@ def parse_intent_node(state: GMState) -> Dict:
         else:
             steps = [
                 {"type": "click_element", "payload": "notepad.edit_field"},
-                {"type": "type_text", "payload": "echo Base Pipeline Operational Sequence Complete!"}
+                {"type": "type_text", "payload": "echo Base Operational Flow Active!"}
             ]
         structured_steps = {"steps": steps}
 
@@ -114,25 +118,28 @@ def parse_intent_node(state: GMState) -> Dict:
         "approval_status": "pending"
     }
 
-# 4. Conditional Edge: The Core Safety Gatekeeper
+# Conditional Edge: The Core Safety Gatekeeper
 def safety_gate_condition(state: GMState) -> str:
     if state.get("approval_status") == "approved":
         return "execute_macros"
     return END 
 
-# 5. Node: Execute Automation via Peripheral Injection (With App/Browser Target Protections)
+# Node: Execute Automation via Peripheral Injection (Now Supporting Saved Json Scripts)
 def execute_macros_node(state: GMState) -> Dict:
-    print("\n[GM AI] [System Actions Active] Running pre-execution self-healing path validations...")
+    print("\n[GM AI] [System Actions Active] Running pre-execution validations...")
     time.sleep(1.0) 
     
     for step in state["proposed_actions"]:
         action_type = step["type"]
         payload = step["payload"]
         
-        if action_type == "click_element":
+        if action_type == "run_saved_macro":
+            print(f"[GM AI Engine] Deploying high-fidelity saved hardware macro sequence...")
+            macro_player.execute_replay()
+            
+        elif action_type == "click_element":
             if "." in payload:
                 app_key, element_key = payload.split(".", 1)
-                # Auto-heal or mount web applications or classic programs dynamically
                 bootstrapper.ensure_application_running(app_key)
                 operator_bridge.execute_targeted_click(app_key, element_key)
             else:
@@ -154,7 +161,7 @@ def execute_macros_node(state: GMState) -> Dict:
     print("[GM AI] Operational sequence completed successfully.")
     return {}
 
-# 6. Assemble the Graph State Workflow Architecture
+# Assemble the Graph State Workflow Architecture
 workflow = StateGraph(GMState)
 workflow.add_node("capture_context", capture_context_node)
 workflow.add_node("parse_intent", parse_intent_node)
@@ -174,7 +181,7 @@ gm_engine = workflow.compile(checkpointer=memory)
 if __name__ == "__main__":
     thread_config = {"configurable": {"thread_id": "global_session"}}
     print("======================================================")
-    print("GM AI v1.7 — Browser & Process-Aware Hybrid Core Active")
+    print("GM AI v1.7 — Autonomous Macro Replay Core Engaged")
     print("======================================================")
     
     user_input = input("Describe what you want to do in simple/broken English: ")
