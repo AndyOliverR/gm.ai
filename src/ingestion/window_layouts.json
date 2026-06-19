@@ -16,6 +16,10 @@
     "search_input": {"rel_x": 0.45, "rel_y": 0.42},
     "submit_action": {"rel_x": 0.58, "rel_y": 0.42}
   },
+  "google_web": {
+    "search_box": {"rel_x": 0.5, "rel_y": 0.46},
+    "lucky_button": {"rel_x": 0.56, "rel_y": 0.54}
+  },
   "mobile_canvas_fallback": {
     "center_touch": {"rel_x": 0.5, "rel_y": 0.5}
   }
