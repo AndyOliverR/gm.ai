@@ -10,10 +10,8 @@ from typing import Dict, TypedDict, Optional, List
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.sqlite import SqliteSaver
 
-# Dynamically ensure top-level project module access
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-# Import Phase 5, 6, 7, 8 & 9 unified engine components
 from src.ingestion.screen_capture import ScreenContextLayer
 from src.ingestion.ocr_reader import GMAScreenOCRReader
 from src.execution.action_bridge import SystemOperatorBridge
@@ -21,11 +19,9 @@ from src.communication.voice_ledger import GMAIVoiceAuditor
 from src.execution.app_bootstrapper import GMAIAppBootstrapper
 from src.execution.macro_player import GMAIMacroPlayer
 
-# Configure Safety Constraints for Desktop Automation
 pyautogui.FAILSAFE = True  
 pyautogui.PAUSE = 0.05     
 
-# Define the Structured State of the Human Mind Extension
 class GMState(TypedDict):
     raw_user_input: str          
     captured_context: str        
@@ -34,12 +30,10 @@ class GMState(TypedDict):
     proposed_actions: List[Dict] 
     approval_status: str         
 
-# Initialize Local SQLite Ledger to preserve execution states during human pauses
 import sqlite3
 db_connection = sqlite3.connect("gm_memory.db", check_same_thread=False)
 memory = SqliteSaver(db_connection)
 
-# Instantiating our newly integrated modular sub-layers
 screen_layer = ScreenContextLayer()
 ocr_engine = GMAScreenOCRReader()
 operator_bridge = SystemOperatorBridge()
@@ -47,7 +41,6 @@ voice_auditor = GMAIVoiceAuditor()
 bootstrapper = GMAIAppBootstrapper()
 macro_player = GMAIMacroPlayer()
 
-# Node: Capture Screen Context (The AI's Eyes)
 def capture_context_node(state: GMState) -> Dict:
     print("\n[GM AI] [Eyes Active] Snapshotting screen and running OCR pattern trace matching...")
     cached_frame_path = screen_layer.capture_full_display()
@@ -64,7 +57,6 @@ def capture_context_node(state: GMState) -> Dict:
         "extracted_entities": scraped_entities
     }
 
-# Node: Parse Intent via Local Ollama (The AI's Brain - Custom Router for Saved Macros)
 def parse_intent_node(state: GMState) -> Dict:
     print("[GM AI] [Brain Active] Normalizing instruction pipelines via Ollama...")
     ollama_url = "http://localhost:11434/api/generate"
@@ -93,8 +85,19 @@ def parse_intent_node(state: GMState) -> Dict:
         structured_steps = json.loads(response['response'])
     except Exception:
         user_lower = state['raw_user_input'].lower()
-        # Phase 9 Local Step Routing Override For Physical Macro Execution Triggers
-        if "run macro" in user_lower or "replay" in user_lower or "playback" in user_lower:
+        
+        # Check if the user is passing an explicit destination link or asking to open a URL bar
+        target_url = "google.com" # Default routing address
+        for entity_url in state['extracted_entities'].get("urls", []):
+            target_url = entity_url
+            
+        if "go to" in user_lower or "visit" in user_lower or "http" in user_lower or ".com" in user_lower:
+            steps = [
+                {"type": "click_element", "payload": "chrome.url_bar"},
+                {"type": "type_text", "payload": target_url},
+                {"type": "press_key", "payload": "enter"}
+            ]
+        elif "run macro" in user_lower or "replay" in user_lower or "playback" in user_lower:
             steps = [{"type": "run_saved_macro", "payload": "recorded_macro.json"}]
         elif "chrome" in user_lower or "browser" in user_lower or "web" in user_lower:
             steps = [
@@ -118,13 +121,11 @@ def parse_intent_node(state: GMState) -> Dict:
         "approval_status": "pending"
     }
 
-# Conditional Edge: The Core Safety Gatekeeper
 def safety_gate_condition(state: GMState) -> str:
     if state.get("approval_status") == "approved":
         return "execute_macros"
     return END 
 
-# Node: Execute Automation via Peripheral Injection (Now Supporting Saved Json Scripts)
 def execute_macros_node(state: GMState) -> Dict:
     print("\n[GM AI] [System Actions Active] Running pre-execution validations...")
     time.sleep(1.0) 
@@ -161,7 +162,6 @@ def execute_macros_node(state: GMState) -> Dict:
     print("[GM AI] Operational sequence completed successfully.")
     return {}
 
-# Assemble the Graph State Workflow Architecture
 workflow = StateGraph(GMState)
 workflow.add_node("capture_context", capture_context_node)
 workflow.add_node("parse_intent", parse_intent_node)
@@ -181,7 +181,7 @@ gm_engine = workflow.compile(checkpointer=memory)
 if __name__ == "__main__":
     thread_config = {"configurable": {"thread_id": "global_session"}}
     print("======================================================")
-    print("GM AI v1.7 — Autonomous Macro Replay Core Engaged")
+    print("GM AI v1.7 — Autonomous Web Browser Navigator Active")
     print("======================================================")
     
     user_input = input("Describe what you want to do in simple/broken English: ")
