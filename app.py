@@ -17,6 +17,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from src.ingestion.screen_capture import ScreenContextLayer
 from src.ingestion.ocr_reader import GMAScreenOCRReader
 from src.execution.action_bridge import SystemOperatorBridge
+from src.communication.voice_ledger import GMAIVoiceAuditor
 
 # Configure Safety Constraints for Desktop Automation
 pyautogui.FAILSAFE = True  
@@ -39,6 +40,7 @@ memory = SqliteSaver(db_connection)
 screen_layer = ScreenContextLayer()
 ocr_engine = GMAScreenOCRReader()
 operator_bridge = SystemOperatorBridge()
+voice_auditor = GMAIVoiceAuditor()
 
 # 2. Node: Capture Screen Context (The AI's Eyes)
 def capture_context_node(state: GMState) -> Dict:
@@ -54,7 +56,7 @@ def capture_context_node(state: GMState) -> Dict:
         "captured_context": f"OCR Visual Text Map: '{extracted_text}' | Frame Anchor: {cached_frame_path}"
     }
 
-# 3. Node: Parse Intent via Local Ollama (The AI's Brain - Now supporting Hotkeys)
+# 3. Node: Parse Intent via Local Ollama (The AI's Brain - Now supporting Voice narration triggers)
 def parse_intent_node(state: GMState) -> Dict:
     print("[GM AI] [Brain Active] Normalizing rough instructions via Ollama...")
     ollama_url = "http://localhost:11434/api/generate"
@@ -62,8 +64,7 @@ def parse_intent_node(state: GMState) -> Dict:
     system_prompt = (
         "You are GM AI, a seamless extension of the human mind. Convert the user's raw, "
         "fragmented instruction into a highly structured JSON automation plan containing an array of 'steps'. "
-        "Each step must be an object with 'type' ('click_element', 'type_text', 'press_key', or 'press_hotkey') and 'payload'.\n"
-        "For 'press_hotkey', look for combinations like 'ctrl+shift+esc', 'alt+tab', or 'ctrl+c'."
+        "Each step must be an object with 'type' ('click_element', 'type_text', 'press_key', 'press_hotkey', or 'speak_log') and 'payload'."
     )
     
     prompt_payload = f"Sensed Screen OCR Layout: {state['captured_context']}\nUser Intent Input: {state['raw_user_input']}"
@@ -80,8 +81,10 @@ def parse_intent_node(state: GMState) -> Dict:
         structured_steps = json.loads(response['response'])
     except Exception:
         user_lower = state['raw_user_input'].lower()
-        # Fallback tracking simulation pattern loops
-        if "task manager" in user_lower or "hotkey" in user_lower:
+        # Direct structural routing logic if Ollama is offline
+        if "read" in user_lower or "log" in user_lower or "timeline" in user_lower or "speak" in user_lower:
+            steps = [{"type": "speak_log", "payload": "trigger_timeline_audio"}]
+        elif "task manager" in user_lower or "hotkey" in user_lower:
             steps = [{"type": "press_hotkey", "payload": "ctrl+shift+esc"}]
         elif "click" in user_lower or "notepad" in user_lower:
             steps = [
@@ -107,9 +110,9 @@ def safety_gate_condition(state: GMState) -> str:
         return "execute_macros"
     return END 
 
-# 5. Node: Execute Automation via Peripheral Injection (The AI's Hands - Now executing hotkeys)
+# 5. Node: Execute Automation via Peripheral Injection (The AI's Hands & Mouth)
 def execute_macros_node(state: GMState) -> Dict:
-    print("\n[GM AI] [Hands Active] Executing user-approved system macro sequence...")
+    print("\n[GM AI] [Hands/Mouth Active] Executing user-approved system macro sequence...")
     time.sleep(1.0) 
     
     for step in state["proposed_actions"]:
@@ -130,10 +133,14 @@ def execute_macros_node(state: GMState) -> Dict:
             pyautogui.press(payload)
             
         elif action_type == "press_hotkey":
-            # Fire our newly linked compound macro engine channel
             operator_bridge.execute_system_hotkey(payload)
             
-    print("[GM AI] Macro sequence completed successfully.")
+        elif action_type == "speak_log":
+            # Fire our voice narrative channel dynamically
+            print("[GM AI Engine] Activating verbal audit narrative sequence...")
+            voice_auditor.speak_timeline_summary()
+            
+    print("[GM AI] Operational sequence completed successfully.")
     return {}
 
 # 6. Assemble the Graph State Workflow Architecture
@@ -156,7 +163,7 @@ gm_engine = workflow.compile(checkpointer=memory)
 if __name__ == "__main__":
     thread_config = {"configurable": {"thread_id": "global_session"}}
     print("======================================================")
-    print("GM AI v1.6 — Integrated Compound Macro Engine Active")
+    print("GM AI v1.6 — Integrated Multimodal Vision & Audio Engine Active")
     print("======================================================")
     
     user_input = input("Describe what you want to do in simple/broken English: ")
