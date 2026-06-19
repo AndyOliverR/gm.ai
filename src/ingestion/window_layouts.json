@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "reference_width": 1920,
+    "reference_height": 1080
+  },
   "notepad": {
     "edit_field": {"rel_x": 0.5, "rel_y": 0.5},
     "file_menu": {"rel_x": 0.02, "rel_y": 0.04}

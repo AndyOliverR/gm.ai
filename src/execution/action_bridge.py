@@ -27,42 +27,44 @@ class SystemOperatorBridge:
             return {}
 
     def execute_targeted_click(self, app_key: str, element_key: str):
-        """Resolves active window boundaries and clicks the exact relative layout zone."""
+        """Resolves target app window boundaries and scales input coordinates responsively."""
         bounds = self.capturer.extract_window_bounds()
         left, top, right, bottom = bounds
         win_w = right - left
         win_h = bottom - top
 
+        # Detect the physical monitor dimensions dynamically
+        screen_width, screen_height = pyautogui.size()
+        print(f"[GM AI Scaler] Live hardware display matrix: {screen_width}x{screen_height}")
+
         if app_key in self.layouts and element_key in self.layouts[app_key]:
             rel = self.layouts[app_key][element_key]
+            
+            # Apply resolution-agnostic bounding calculations
             target_x = left + int(win_w * rel["rel_x"])
             target_y = top + int(win_h * rel["rel_y"])
             
-            print(f"[GM AI Operator] Moving to coordinate: ({target_x}, {target_y})")
+            # Bound validation check to prevent clicking off-screen hardware coordinates
+            target_x = max(0, min(target_x, screen_width - 1))
+            target_y = max(0, min(target_y, screen_height - 1))
+            
+            print(f"[GM AI Operator] Dynamic target scaled safely to point: ({target_x}, {target_y})")
             pyautogui.moveTo(target_x, target_y, duration=0.5)
             pyautogui.click()
-            print("[GM AI Operator] Click executed.")
+            print("[GM AI Operator] Cross-display scaled action deployed.")
             return True
+            
+        print(f"[GM AI Operator] Target mapping mismatch: {app_key}.{element_key}")
         return False
 
     def execute_text_input(self, text: str, press_enter: bool = True):
-        """Simulates human typing string entry with uniform character delays."""
         print(f"[GM AI Operator] Emulating text entry sequencing: '{text}'")
-        # 0.05 seconds delay between keys mimics natural human timing patterns
         pyautogui.write(text, interval=0.05)
-        
         if press_enter:
             pyautogui.press('enter')
-            print("[GM AI Operator] Enter key command dispatched.")
 
 if __name__ == "__main__":
     operator = SystemOperatorBridge()
-    print("[GM AI] Initializing Macro Test Layer with Keystroke Automation...")
-    print("[GM AI] Safety Reminder: Jerk your mouse cursor to the top-left corner to abort instantly.")
+    print("[GM AI] Initializing Scaling Engine Local Verification...")
     time.sleep(2)
-    
-    # Run a test click on our active workspace window canvas boundary zone
     operator.execute_targeted_click("notepad", "edit_field")
-    
-    # Immediately type a diagnostic print command string safely on screen
-    operator.execute_text_input("echo [GM AI] Human Operator Extension Active!", press_enter=False)
