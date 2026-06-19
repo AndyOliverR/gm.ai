@@ -1,6 +1,16 @@
 import os
 import time
+import ctypes
 from typing import Dict, Any, Tuple
+
+# Force strict hardware coordinate tracking across high-DPI magnified displays
+try:
+    ctypes.windll.shcore.SetProcessDpiAwareness(2) # Per-Monitor DPI Aware profile
+except Exception:
+    try:
+        ctypes.windll.user32.SetProcessDPIAware() # Classic Windows fallback hook
+    except Exception:
+        print("[GM AI Scaling Warning] Failed to initialize hardware DPI awareness loops.")
 
 try:
     from PIL import ImageGrab
@@ -16,7 +26,7 @@ class ScreenContextLayer:
         
     def capture_full_display(self) -> str:
         """Captures the active screen layout, saves it, and runs a cache cleanup."""
-        self._purge_old_cache_frames(max_age_seconds=60) # Auto-prune old frames
+        self._purge_old_cache_frames(max_age_seconds=60)
         
         timestamp = int(time.time())
         filepath = os.path.join(self.output_dir, f"raw_surface_{timestamp}.png")
@@ -25,13 +35,11 @@ class ScreenContextLayer:
         return filepath
 
     def _purge_old_cache_frames(self, max_age_seconds: int = 60):
-        """Removes stale diagnostic screen captures to preserve system disk space."""
         try:
             now = time.time()
             for filename in os.listdir(self.output_dir):
                 if filename.startswith("raw_surface_") and filename.endswith(".png"):
                     file_path = os.path.join(self.output_dir, filename)
-                    # Check if file creation window exceeds thresholds
                     if os.path.getmtime(file_path) < (now - max_age_seconds):
                         os.remove(file_path)
         except Exception as e:
@@ -53,7 +61,7 @@ class ScreenContextLayer:
 
 if __name__ == "__main__":
     parser = ScreenContextLayer()
-    print("[GM AI] Running automated Screen Context Layer cache-clearing execution test...")
+    print("[GM AI] Running DPI-Aware Screen Context Layer validation test...")
     path = parser.capture_full_display()
     print(f"[GM AI] Active Context Frame isolated at: {path}")
     bounds = parser.extract_window_bounds()
