@@ -1,0 +1,36 @@
+﻿{
+    "$schema": "https://agntcy.org",
+    "provider": {
+        "name": "gm.ai Core Engine",
+        "domain": "local.gm.ai"
+    },
+    "capabilities": [
+        {
+            "id": "open_config",
+            "description": "Launches the application configuration json file in an external editor.",
+            "phrasings": ["open config", "show configuration", "check config file", "open setting"],
+            "target": {
+                "class": "GMAIEngine",
+                "shortcut_key": "open config"
+            }
+        },
+        {
+            "id": "scan_workspace",
+            "description": "Scans the entire local repository using ignore boundaries and summarizes project scale.",
+            "phrasings": ["read my code", "scan directory", "look at files", "what code is here"],
+            "target": {
+                "class": "WorkspaceContextAggregator",
+                "method": "scan_workspace_text"
+            }
+        },
+        {
+            "id": "run_sandbox_code",
+            "description": "Executes or tests custom code automations safely inside an isolated environment.",
+            "phrasings": ["run code", "test script", "execute custom logic", "run safe script"],
+            "target": {
+                "class": "GMSelfCorrectionController",
+                "method": "run_with_self_healing"
+            }
+        }
+    ]
+}
