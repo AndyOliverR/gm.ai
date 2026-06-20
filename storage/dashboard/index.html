@@ -13,13 +13,10 @@
         .badge { padding: 6px 14px; font-size: 12px; font-weight: 700; border-radius: 20px; letter-spacing: 0.5px; text-transform: uppercase; }
         .status-online { background: #22c55e; color: #ffffff; box-shadow: 0 0 10px rgba(34,197,94,0.3); }
         .status-offline { background: #ef4444; color: #ffffff; box-shadow: 0 0 10px rgba(239,68,68,0.3); }
-        
-        /* Stats Summary Container Box Rules */
         .stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
         .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px 20px; display: flex; flex-direction: column; }
         .stat-label { font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 600; letter-spacing: 0.5px; }
         .stat-value { font-size: 24px; font-weight: 700; color: #f1f5f9; margin-top: 6px; font-family: monospace; }
-        
         .layout-container { display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
         .card { background: #1e293b; border-radius: 12px; border: 1px solid #334155; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 24px; }
         .card h2 { font-size: 14px; color: #f1f5f9; margin-bottom: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-left: 4px solid #38bdf8; padding-left: 10px; }
@@ -33,18 +30,26 @@
         .input-group { display: flex; gap: 12px; margin-top: 20px; }
         input[type="text"] { flex: 1; background: #090d16; border: 1px solid #334155; border-radius: 8px; padding: 12px; color: #f8fafc; font-size: 13px; outline: none; }
         button { background: #38bdf8; color: #0f172a; border: none; border-radius: 8px; padding: 12px 20px; font-weight: 700; font-size: 13px; cursor: pointer; }
+        
+        /* New Interactive Remote Action Control Buttons Styles */
+        .gate-actions { display: flex; gap: 12px; margin-top: 20px; padding: 16px; background: #090d16; border-radius: 8px; border: 1px solid #334155; display: none; align-items: center; justify-content: space-between; }
+        .gate-msg { font-size: 13px; color: #38bdf8; font-weight: 600; }
+        .gate-buttons { display: flex; gap: 10px; }
+        .btn-approve { background: #22c55e; color: white; padding: 10px 20px; border-radius: 6px; font-weight: 700; font-size: 12px; border: none; cursor: pointer; }
+        .btn-approve:hover { background: #16a34a; }
+        .btn-reject { background: #ef4444; color: white; padding: 10px 20px; border-radius: 6px; font-weight: 700; font-size: 12px; border: none; cursor: pointer; }
+        .btn-reject:hover { background: #dc2626; }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="title">
             <h1>GM AI Multi-Tenant Portal</h1>
-            <p>Phase 18 - Real-Time Background Daemon Visualization Metrics</p>
+            <p>Phase 21 - Live Remote Web UI Plan Approval Gate Integration</p>
         </div>
         <div id="statusBadge" class="badge status-offline">Connecting</div>
     </div>
 
-    <!-- Live Telemetry Stats Counters Extension Grid Panel Bar Row -->
     <div class="stats-bar">
         <div class="stat-card">
             <span class="stat-label">Total Session Actions</span>
@@ -55,7 +60,7 @@
             <span id="statHeartbeats" class="stat-value">0</span>
         </div>
         <div class="stat-card">
-            <span class="stat-label">Active Channel Channels</span>
+            <span class="stat-label">Active Tenant Channels</span>
             <span id="statChannels" class="stat-value">1</span>
         </div>
     </div>
@@ -80,9 +85,19 @@
                         </tr>
                     </thead>
                     <tbody id="auditTableBody">
-                        <!-- Dynamic multi-user data append here -->
+                        <!-- Dynamic data row maps load here -->
                     </tbody>
                 </table>
+                
+                <!-- Live Interactive Remote Approval Gate Banner UI Element -->
+                <div id="approvalGate" class="gate-actions">
+                    <div class="gate-msg">⚠️ Wireless Plan Pending: Awaiting Host Authorization Signature...</div>
+                    <div class="gate-buttons">
+                        <button class="btn-approve" onclick="submitGateDecision('y')">Approve & Execute</button>
+                        <button class="btn-reject" onclick="submitGateDecision('n')">Reject & Abort</button>
+                    </div>
+                </div>
+
                 <div class="input-group">
                     <input type="text" id="cmdInput" placeholder="Dispatch instructions to active channel context...">
                     <button onclick="dispatchCommand()">Run Action</button>
@@ -100,8 +115,6 @@
         let ws;
         let activeChannel = 'all';
         const trackedChannels = new Set();
-        
-        // Phase 18 Metric Counter Registers
         let totalActionsCount = 0;
         let backgroundHeartbeatsCount = 0;
 
@@ -109,8 +122,8 @@
         const logStream = document.getElementById('logStream');
         const tableBody = document.getElementById('auditTableBody');
         const channelContainer = document.getElementById('channelContainer');
+        const approvalGate = document.getElementById('approvalGate');
         
-        // Element bindings for statistics extensions
         const statActions = document.getElementById('statActions');
         const statHeartbeats = document.getElementById('statHeartbeats');
         const statChannels = document.getElementById('statChannels');
@@ -127,7 +140,6 @@
             ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    appendLog('Incoming multi-tenant transaction packet received.');
                     
                     const id = data.id || 'NEW';
                     const device = data.device || 'Remote Client';
@@ -135,7 +147,7 @@
                     const status = data.status || 'PENDING_AUTH';
                     const channel = data.channel || 'main_session';
 
-                    // Phase 18 Math Metrics Logic parsing checks
+                    // Track metrics and counters cleanly
                     if (channel === 'background_telemetry') {
                         backgroundHeartbeatsCount++;
                         statHeartbeats.textContent = backgroundHeartbeatsCount;
@@ -144,10 +156,15 @@
                         statActions.textContent = totalActionsCount;
                     }
 
+                    // Dynamically surface the interactive choice banner on incoming confirmation state payloads
+                    if (status === 'AWAITING_HUMAN_CONFIRMATION') {
+                        approvalGate.style.display = 'flex';
+                        appendLog(`[ALERT] Action plan on channel [${channel.toUpperCase()}] triggered the human safety gate!`);
+                    }
+
                     if (!trackedChannels.has(channel)) {
                         trackedChannels.add(channel);
                         renderChannelButtons();
-                        // Update active channel totals on viewport registry (+1 adds 'All Shared Events' base)
                         statChannels.textContent = trackedChannels.size + 1;
                     }
 
@@ -166,16 +183,32 @@
                     applyFilter();
                     
                 } catch(e) {
-                    appendLog('Raw Data Matrix Parse Warning: ' + event.data);
+                    appendLog('Raw telemetry: ' + event.data);
                 }
             };
 
             ws.onclose = () => {
                 statusBadge.textContent = 'OFFLINE';
                 statusBadge.className = 'badge status-offline';
+                approvalGate.style.display = 'none';
                 appendLog('Handshake dropped. Reconnecting...');
                 setTimeout(connectSocket, 5000);
             };
+        }
+
+        function submitGateDecision(decision) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            // Build the back-channel telemetry signature response token payload
+            const responsePayload = {
+                type: "gate_authorization",
+                decision: decision,
+                channel: activeChannel === 'all' ? 'main_session' : activeChannel
+            };
+            
+            ws.send(JSON.stringify(responsePayload));
+            approvalGate.style.display = 'none';
+            appendLog(`Submitted remote gate signature choice: [${decision.toUpperCase()}]`);
         }
 
         function renderChannelButtons() {
